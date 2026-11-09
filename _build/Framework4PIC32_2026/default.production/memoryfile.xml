@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<project>                                  
+  <executable name="C:\Users\sanji\MPLABProjects\Me218aLab3Part4\out\Framework4PIC32_2026\production\default-production.elf">                 
+    <memory name="program">                 
+      <units>bytes</units>                 
+      <length>263312</length>                 
+      <used>42019</used>                     
+      <free>221293</free>                     
+    </memory>                              
+    <memory name="data">              
+      <units>bytes</units>                 
+      <length>65536</length>                 
+      <used>1612</used>                     
+      <free>63924</free>                     
+    </memory>                              
+  </executable>                            
+</project>                                 
