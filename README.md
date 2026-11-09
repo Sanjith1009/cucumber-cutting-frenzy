@@ -1,4 +1,5 @@
 
+
 # Framework4PIC32_2026
 
 ## Structure
@@ -11,3 +12,6 @@
 | .vscode\settings.json                   | Workspace specific settings                                                                                                         |
 | .vscode\Framework4PIC32_2026.mplab.json | The MPLAB project file, should not be deleted                                                                                       |
 | out                                     | Final build artifacts                                                                                                               |
+
+# cucumber-cutting-frenzy
+Events and Services Framework for physical cucumber cutting game.
