@@ -1,0 +1,6 @@
+
+/audio-test-sandbox/_build/
+
+/audio-test-sandbox/cmake/**/.generated/
+/audio-test-sandbox/out/
+/audio-test-sandbox/.vscode/*-local.json
