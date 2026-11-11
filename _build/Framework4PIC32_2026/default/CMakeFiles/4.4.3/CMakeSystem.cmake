@@ -1,9 +1,9 @@
-set(CMAKE_HOST_SYSTEM "Windows-10.0.26300")
+set(CMAKE_HOST_SYSTEM "Windows-10.0.26200")
 set(CMAKE_HOST_SYSTEM_NAME "Windows")
-set(CMAKE_HOST_SYSTEM_VERSION "10.0.26300")
+set(CMAKE_HOST_SYSTEM_VERSION "10.0.26200")
 set(CMAKE_HOST_SYSTEM_PROCESSOR "")
 
-include("C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/cmake/Framework4PIC32_2026/default/.generated/toolchain.cmake")
+include("C:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/cmake/Framework4PIC32_2026/default/.generated/toolchain.cmake")
 
 set(CMAKE_SYSTEM "Generic")
 set(CMAKE_SYSTEM_NAME "Generic")

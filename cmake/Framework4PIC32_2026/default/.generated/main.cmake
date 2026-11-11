@@ -46,15 +46,15 @@ endif()
 
 
 # Main target for this project
-add_executable(Framework4PIC32_2026_default_image_SuIsVi1e ${Framework4PIC32_2026_default_library_list})
+add_executable(Framework4PIC32_2026_default_image_A_B1raXS ${Framework4PIC32_2026_default_library_list})
 
-set_target_properties(Framework4PIC32_2026_default_image_SuIsVi1e PROPERTIES
+set_target_properties(Framework4PIC32_2026_default_image_A_B1raXS PROPERTIES
     OUTPUT_NAME "default"
     SUFFIX ".elf"
     RUNTIME_OUTPUT_DIRECTORY "${Framework4PIC32_2026_default_output_dir}")
-target_link_libraries(Framework4PIC32_2026_default_image_SuIsVi1e PRIVATE ${Framework4PIC32_2026_default_default_XC32_FILE_TYPE_link})
+target_link_libraries(Framework4PIC32_2026_default_image_A_B1raXS PRIVATE ${Framework4PIC32_2026_default_default_XC32_FILE_TYPE_link})
 # Add the link options from the rule file.
-Framework4PIC32_2026_default_link_rule( Framework4PIC32_2026_default_image_SuIsVi1e)
+Framework4PIC32_2026_default_link_rule( Framework4PIC32_2026_default_image_A_B1raXS)
 
 # Add bin2hex target for converting built file to a .hex file.
 string(REGEX REPLACE [.]elf$ .hex Framework4PIC32_2026_default_image_name_hex ${Framework4PIC32_2026_default_image_name})
@@ -63,7 +63,7 @@ add_custom_target(Framework4PIC32_2026_default_Bin2Hex ALL
     DEPENDS "${Framework4PIC32_2026_default_output_dir}/${Framework4PIC32_2026_default_image_name}"
     BYPRODUCTS ${Framework4PIC32_2026_default_output_dir}/${Framework4PIC32_2026_default_image_name_hex}
     COMMENT "Convert built file to .hex")
-add_dependencies(Framework4PIC32_2026_default_Bin2Hex Framework4PIC32_2026_default_image_SuIsVi1e)
+add_dependencies(Framework4PIC32_2026_default_Bin2Hex Framework4PIC32_2026_default_image_A_B1raXS)
 
 
 

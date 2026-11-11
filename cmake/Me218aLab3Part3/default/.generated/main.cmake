@@ -46,15 +46,15 @@ endif()
 
 
 # Main target for this project
-add_executable(Me218aLab3Part3_default_image_UzTEwlhr ${Me218aLab3Part3_default_library_list})
+add_executable(Me218aLab3Part3_default_image_1Dj29I66 ${Me218aLab3Part3_default_library_list})
 
-set_target_properties(Me218aLab3Part3_default_image_UzTEwlhr PROPERTIES
+set_target_properties(Me218aLab3Part3_default_image_1Dj29I66 PROPERTIES
     OUTPUT_NAME "default"
     SUFFIX ".elf"
     RUNTIME_OUTPUT_DIRECTORY "${Me218aLab3Part3_default_output_dir}")
-target_link_libraries(Me218aLab3Part3_default_image_UzTEwlhr PRIVATE ${Me218aLab3Part3_default_default_XC32_FILE_TYPE_link})
+target_link_libraries(Me218aLab3Part3_default_image_1Dj29I66 PRIVATE ${Me218aLab3Part3_default_default_XC32_FILE_TYPE_link})
 # Add the link options from the rule file.
-Me218aLab3Part3_default_link_rule( Me218aLab3Part3_default_image_UzTEwlhr)
+Me218aLab3Part3_default_link_rule( Me218aLab3Part3_default_image_1Dj29I66)
 
 # Add bin2hex target for converting built file to a .hex file.
 string(REGEX REPLACE [.]elf$ .hex Me218aLab3Part3_default_image_name_hex ${Me218aLab3Part3_default_image_name})
@@ -63,7 +63,7 @@ add_custom_target(Me218aLab3Part3_default_Bin2Hex ALL
     DEPENDS "${Me218aLab3Part3_default_output_dir}/${Me218aLab3Part3_default_image_name}"
     BYPRODUCTS ${Me218aLab3Part3_default_output_dir}/${Me218aLab3Part3_default_image_name_hex}
     COMMENT "Convert built file to .hex")
-add_dependencies(Me218aLab3Part3_default_Bin2Hex Me218aLab3Part3_default_image_UzTEwlhr)
+add_dependencies(Me218aLab3Part3_default_Bin2Hex Me218aLab3Part3_default_image_1Dj29I66)
 
 
 
