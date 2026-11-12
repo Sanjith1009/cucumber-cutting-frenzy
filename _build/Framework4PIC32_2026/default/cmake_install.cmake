@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/cmake/Framework4PIC32_2026/default
+# Install script for directory: C:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/cmake/Framework4PIC32_2026/default
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,7 +40,7 @@ endif()
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default/install_local_manifest.txt"
+  file(WRITE "C:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/_build/Framework4PIC32_2026/default/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
 if(CMAKE_INSTALL_COMPONENT)
@@ -56,6 +56,6 @@ else()
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default/${CMAKE_INSTALL_MANIFEST}"
+  file(WRITE "C:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/_build/Framework4PIC32_2026/default/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

@@ -35,6 +35,10 @@
 // a particular application. It will vary in value from 1 to MAX_NUM_SERVICES
 #define NUM_SERVICES 5
 
+// adding these calls in to correspond to their configured service slots
+#define AUDIO_SERVICE_PRIORITY 3
+#define TREAT_SERVICE_PRIORITY 4
+
 /****************************************************************************/
 // These are the definitions fo Service 0, the lowest priority service.
 // Every Events and Services application must have a Service 0. Further
@@ -254,23 +258,42 @@
 // Universal events occupy the lowest entries, followed by user-defined events
 typedef enum
 {
-  ES_START_BUTTON
-  ES_IDLE
-  ES_POTENTIOMETER
-  ES_HANDLE_TOUCH
-  ES_HANDLE_RELEASE
-  ES_RESET
-  ES_PLAY
-  ES_BEAM_UNBROKEN
-  ES_CHOP
-  ES_INIT
-  ES_AUDIO_321GO
-  ES_AUDIO_HANDLE_RELEASE_IDLE
-  ES_AUDIO_CHOP
-  ES_AUDIO_NOT_HIGH_ENOUGH
-  ES_AUDIO_ENDGAME
-  ES_TIMEOUT
-  ES_TREAT
+  // Standard framework events
+  ES_NO_EVENT,
+  ES_INIT,
+  ES_TIMEOUT,
+  ES_SHORT_TIMEOUT,
+  ES_NEW_KEY,
+
+  // Game events
+  ES_START_BUTTON,
+  ES_IDLE,
+  ES_POTENTIOMETER,
+  ES_HANDLE_TOUCH,
+  ES_HANDLE_RELEASE,
+  ES_RESET,
+  ES_PLAY,
+  ES_BEAM_UNBROKEN,
+  ES_CHOP,
+
+  // LED events
+  ES_Update_Step,
+  ES_Update_Complete,
+
+  // Audio events
+  ES_AUDIO_321GO,
+  ES_AUDIO_HANDLE_RELEASE_IDLE,
+  ES_AUDIO_CHOP,
+  ES_AUDIO_NOT_HIGH_ENOUGH,
+  ES_AUDIO_ENDGAME,
+
+  // Other things not mentioned yet
+  ES_HANDLE_TOUCHED,
+  ES_HANDLE_RELEASED,
+  ES_DISPENSE_TREATS,
+  ES_PLAY_FINISHED_AUDIO,
+  ES_NEW_EVENT1,
+  ES_NEW_EVENT2
 }ES_EventType_t;
 
 /****************************************************************************/
@@ -326,7 +349,7 @@ typedef enum
 #define TIMER9_RESP_FUNC TIMER_UNUSED
 #define TIMER10_RESP_FUNC TIMER_UNUSED
 #define TIMER11_RESP_FUNC TIMER_UNUSED
-#define TIMER12_RESP_FUNC TIMER_UNUSED
+#define TIMER12_RESP_FUNC PostSetupService
 #define TIMER13_RESP_FUNC PostSetupService
 #define TIMER14_RESP_FUNC PostPlayService
 #define TIMER15_RESP_FUNC PostDeadmanHandling
@@ -341,6 +364,7 @@ typedef enum
 #define DEADMAN_TIMER 15
 #define PLAY_TIMER 14
 #define SELECT_TIMER 13
-
+#define COUNTDOWN_TIMER 12
 
 #endif /* ES_CONFIGURE_H */
+

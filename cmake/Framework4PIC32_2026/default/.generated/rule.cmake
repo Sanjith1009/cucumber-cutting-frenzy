@@ -1,6 +1,6 @@
 # The following functions contains all the flags passed to the different build stages.
 
-set(PACK_REPO_PATH "C:/Users/sanji/.mchp_packs" CACHE PATH "Path to the root of a pack repository.")
+set(PACK_REPO_PATH "C:/Users/wkcov/.mchp_packs" CACHE PATH "Path to the root of a pack repository.")
 
 function(Framework4PIC32_2026_default_default_XC32_assemble_rule target)
     set(options
@@ -8,7 +8,7 @@ function(Framework4PIC32_2026_default_default_XC32_assemble_rule target)
         "${ASSEMBLER_PRE}"
         "-mprocessor=32MX170F256B"
         "-Wa,--defsym=__MPLAB_BUILD=1${MP_EXTRA_AS_POST},--defsym=__MPLAB_DEBUG=1,--defsym=__DEBUG=1"
-        "-g,--defsym=__MPLAB_DEBUGGER_SNAP=1,-Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders"
+        "-g,--defsym=__MPLAB_DEBUGGER_SNAP=1,-Ic:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/FrameworkHeaders"
         "-mdfp=${PACK_REPO_PATH}/Microchip/PIC32MX_DFP/1.7.380")
     list(REMOVE_ITEM options "")
     target_compile_options(${target} PRIVATE "${options}")
@@ -16,9 +16,9 @@ function(Framework4PIC32_2026_default_default_XC32_assemble_rule target)
         PRIVATE "__DEBUG=1"
         PRIVATE "__MPLAB_DEBUGGER_SNAP=1")
     target_include_directories(${target}
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource")
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/FrameworkSource"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/ProjectHeaders"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/ProjectSource")
 endfunction()
 function(Framework4PIC32_2026_default_default_XC32_assembleWithPreprocess_rule target)
     set(options
@@ -52,10 +52,10 @@ function(Framework4PIC32_2026_default_default_XC32_compile_rule target)
         PRIVATE "__MPLAB_DEBUGGER_SNAP=1"
         PRIVATE "XPRJ_default=default")
     target_include_directories(${target}
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource")
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/FrameworkHeaders"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/FrameworkSource"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/ProjectHeaders"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/ProjectSource")
 endfunction()
 function(Framework4PIC32_2026_default_default_XC32_compile_cpp_rule target)
     set(options
@@ -75,10 +75,10 @@ function(Framework4PIC32_2026_default_default_XC32_compile_cpp_rule target)
         PRIVATE "__MPLAB_DEBUGGER_SNAP=1"
         PRIVATE "XPRJ_default=default")
     target_include_directories(${target}
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource")
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/FrameworkHeaders"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/FrameworkSource"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/ProjectHeaders"
+        PRIVATE "c:/Users/wkcov/Documents/LocalProjects/cucumber-cutting-frenzy/ProjectSource")
 endfunction()
 function(Framework4PIC32_2026_default_dependentObject_rule target)
     set(options

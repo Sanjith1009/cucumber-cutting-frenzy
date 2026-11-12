@@ -9,6 +9,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "PlayService.h"
+#include "Potentiometer.h"
+#include "ServoControl.h"
+#include "LEDService.h"
+
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
@@ -19,9 +24,6 @@ static uint16_t cutThreshold = 0;
 static uint8_t difficultyLED = 0;
 
 void MoveTimerArmServo(uint8_t position);
-void SetLEDsPulsing(void);
-void SetLEDBrightness(uint16_t potValue);
-uint16_t ReadPotentiometer(void);
 uint16_t CalculateDifficulty(uint16_t potValue);
 
 bool InitSetupService(uint8_t Priority)
@@ -119,4 +121,14 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
 bool PostSetupService(ES_Event_t ThisEvent)
 {
   return ES_PostToService(MyPriority, ThisEvent);
+}
+
+uint16_t CalculateDifficulty(uint16_t potValue)
+{
+    if (potValue > 1023)
+    {
+        potValue = 1023;
+    }
+
+    return 3 + ((uint32_t)potValue * 7) / 1023;
 }

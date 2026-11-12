@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "SetupService.h"
+#include "PlayService.h"
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
@@ -18,11 +20,6 @@ static bool highEnough = false;
 static uint16_t chopCounter = 0;
 static uint16_t treatCount = 0;
 static uint16_t cutThreshold = 5; // placeholder
-
-void DecreaseLitLEDs(void);
-void FlashAllLEDs(void);
-void TurnOnAllLEDs(void);
-void MoveTreatServo(void);
 
 bool InitPlayService(uint8_t Priority)
 {

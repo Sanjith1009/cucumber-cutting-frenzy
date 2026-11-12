@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "SetupService.h"
+
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
