@@ -121,6 +121,11 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                 }
             }
             break;
+        case ES_TREAT:
+            for (size_t i = 0; i < ThisEvent.EventParam; i++) {
+                MoveTreatServo();
+            }
+            break;
     }
     return ReturnEvent;
 }
