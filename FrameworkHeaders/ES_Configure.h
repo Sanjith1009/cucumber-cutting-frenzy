@@ -328,7 +328,7 @@ typedef enum
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke
+#define EVENT_CHECK_LIST Check4Keystroke, Check4ChopButton
 
 /****************************************************************************/
 // These are the definitions for the post functions to be executed when the
@@ -339,7 +339,7 @@ typedef enum
 #define TIMER_UNUSED ((pPostFunc)0)
 #define TIMER0_RESP_FUNC TIMER_UNUSED
 #define TIMER1_RESP_FUNC TIMER_UNUSED
-#define TIMER2_RESP_FUNC TIMER_UNUSED
+#define TIMER2_RESP_FUNC PostAudioService
 #define TIMER3_RESP_FUNC TIMER_UNUSED
 #define TIMER4_RESP_FUNC TIMER_UNUSED
 #define TIMER5_RESP_FUNC TIMER_UNUSED
@@ -365,6 +365,7 @@ typedef enum
 #define PLAY_TIMER 14
 #define SELECT_TIMER 13
 #define COUNTDOWN_TIMER 12
+#define AUDIO_TIMER 2
 
 #endif /* ES_CONFIGURE_H */
 

@@ -69,3 +69,9 @@ if("${CMAKE_GENERATOR}" STREQUAL "Unix Makefiles")
         DOC "Find a suitable make, avoid gmake")
 endif()
 
+# Make utility variables for pre/post build steps (MKDIR, CP, MV, RM)
+set(MKDIR gnumkdir -p)
+set(CP cp)
+set(MV mv)
+set(RM rm -f)
+

@@ -17,7 +17,10 @@
 
 #include "../ProjectHeaders/DM_Display.h"
 #include "../ProjectHeaders/PIC32_SPI_HAL.h"
+#include "PWM_PIC32.h"
+#include "AudioService.h"
 
+static void blocking_tone(int pitch, int duration, int volume);
 
 void main(void)
 {
@@ -47,6 +50,12 @@ void main(void)
   ErrorType = ES_Initialize(ES_Timer_RATE_1mS);
   if (ErrorType == Success)
   {
+    ES_Event_t audioEvent = {ES_AUDIO_CHOP, 0};
+
+    if (!PostAudioService(audioEvent))
+    {
+        puts("Failed to post audio event");
+    }
     ErrorType = ES_Run();
   }
   //if we got to here, there was an error
@@ -87,3 +96,14 @@ void main(void)
   }
 }
 
+//define function to play a tone of duration
+static void blocking_tone(int pitch, int duration, int volume)
+{
+  // Start with tone frequency
+  PWMSetup_SetFreqOnTimer(pitch, _Timer2_);
+  // set volume
+  PWMOperate_SetDutyOnChannel(volume, 1);
+  for (int i = 0; i < duration; i++) {
+    // Wait for a while
+  }
+}

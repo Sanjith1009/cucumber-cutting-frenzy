@@ -85,7 +85,7 @@ bool Check4Lock(void)
 }
 
 #endif
-
+static uint8_t LastButtonState = 1;
 /****************************************************************************
  Function
    Check4Keystroke
@@ -117,5 +117,40 @@ bool Check4Keystroke(void)
     return true;
   }
   return false;
+}
+
+bool Check4ChopButton(void)
+{
+  bool returnVal = false;
+    
+    // 1. Read the physical hardware pin (Replace with your actual PIC32 port read)
+    uint8_t CurrentButtonState = PORTBbits.RB9; 
+
+    // 2. Check if the state has changed since the last loop
+    if (CurrentButtonState != LastButtonState)
+    {
+        returnVal = true; // Tell the framework we found an event
+        ES_Event_t NewEvent;
+        
+        // 3. Determine if it was a press or release
+        if (CurrentButtonState == 0) // Button went LOW (pressed)
+        {
+            NewEvent.EventType = ES_CHOP; // need to update when full funcitonality finished
+        }
+        else // Button went HIGH (released)
+        {
+           
+        }
+        
+        NewEvent.EventParam = 0; // You could pass port data here if needed
+        
+        // 4. Post the event. You can post to a specific service, or broadcast it to all
+        ES_PostAll(NewEvent);
+    }
+    
+    // 5. Update the static variable for the next time the framework calls this function
+    LastButtonState = CurrentButtonState;
+    
+    return returnVal;
 }
 
