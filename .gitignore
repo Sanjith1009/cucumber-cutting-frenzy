@@ -12,3 +12,11 @@ out/
 nbproject/Makefile-*
 nbproject/Package-*
 nbproject/private/
+.generated_files/
+nbproject/
+Makefile*
+Package-*
+private/
+!cmake/**/user.cmake
+cmake/**/.generated/*
+cmake/**/CMake*
