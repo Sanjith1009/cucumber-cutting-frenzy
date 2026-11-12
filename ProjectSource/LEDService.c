@@ -78,3 +78,29 @@ bool PostLEDService(ES_Event_t ThisEvent)
 {
   return ES_PostToService(MyPriority, ThisEvent);
 }
+
+void DecreaseLitLEDs(void)
+{
+    // TODO: Reduce illuminated LED count
+}
+
+void FlashAllLEDs(void)
+{
+    // TODO: Start LED flashing pattern
+}
+
+void TurnOnAllLEDs(void)
+{
+    // TODO: Illuminate all six LEDs
+}
+
+void SetLEDsPulsing(void)
+{
+    // TODO: Start idle pulsing animation
+}
+
+void SetLEDBrightness(uint16_t potValue)
+{
+    // TODO: Adjust LED brightness
+    (void)potValue;
+}
