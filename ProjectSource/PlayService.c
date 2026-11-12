@@ -22,7 +22,7 @@ static uint16_t cutThreshold = 5; // placeholder
 void DecreaseLitLEDs(void);
 void FlashAllLEDs(void);
 void TurnOnAllLEDs(void);
-
+void MoveTreatServo(void);
 
 bool InitPlayService(uint8_t Priority)
 {
@@ -122,6 +122,11 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                     ResetEvent.EventParam = 0;
                     PostSetupService(ResetEvent);
                 }
+            }
+            break;
+        case ES_TREAT:
+            for (size_t i = 0; i < ThisEvent.EventParam; i++) {
+                MoveTreatServo();
             }
             break;
     }

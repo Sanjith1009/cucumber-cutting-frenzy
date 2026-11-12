@@ -269,6 +269,8 @@ typedef enum
   ES_AUDIO_CHOP
   ES_AUDIO_NOT_HIGH_ENOUGH
   ES_AUDIO_ENDGAME
+  ES_TIMEOUT
+  ES_TREAT
 }ES_EventType_t;
 
 /****************************************************************************/

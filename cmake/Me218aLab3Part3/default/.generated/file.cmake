@@ -34,6 +34,7 @@ set(Me218aLab3Part3_default_default_XC32_FILE_TYPE_compile
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/LEDService.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/MessageService.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PIC32_SPI_HAL_Starter.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PWM_PIC32.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PlayService.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/Service1.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/SetupService.c"
