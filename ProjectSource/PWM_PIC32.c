@@ -176,26 +176,60 @@ bool PWMSetup_BasicConfig(uint8_t HowMany){
     PWMSetup_MapChannelToOutputPin
 
 ****************************************************************************/  
-bool PWMSetup_MapChannelToOutputPin(uint8_t WhichChannel, PWM_PinMap_t WhichPin)
+
+bool PWMSetup_MapChannelToOutputPin(uint8_t WhichChannel,
+                                   PWM_PinMap_t WhichPin)
 {
-  bool ReturnVal = true;
-  
-  // test that BasicConfig has been called and for legal channel
-  if ( ( -1 == MaxConfiguredChannel) || IsChannelIllegal(WhichChannel))
-  {
-    ReturnVal = false;
-  }else
-  { // now check to see if the requested pin is legal for the requested channel
-    if( false == IsPinLegalForChannel(WhichPin, WhichChannel))
+    if (MaxConfiguredChannel < 0 ||
+        IsChannelIllegal(WhichChannel))
     {
-      ReturnVal = false;
-    }else // OK, everything is legal, now map the pin
-    {
-      *outputMapRegisters[WhichPin] = mapChannel2PinSelConst[WhichChannel-1];
+        return false;
     }
-  }
-  return ReturnVal;
+
+    if (WhichPin > PWM_RPB15 ||
+        !IsPinLegalForChannel(WhichPin, WhichChannel))
+    {
+        return false;
+    }
+
+    // Configure selected pin as a digital output.
+    if (WhichPin <= PWM_RPA4)
+    {
+        uint32_t mask = 1u << (uint32_t)WhichPin;
+        ANSELACLR = mask;
+        TRISACLR = mask;
+    }
+    else
+    {
+        uint32_t mask =
+            1u << ((uint32_t)WhichPin - (uint32_t)PWM_RPB0);
+
+        ANSELBCLR = mask;
+        TRISBCLR = mask;
+    }
+
+    // Unlock Peripheral Pin Select.
+    SYSKEY = 0x00000000;
+    SYSKEY = 0xAA996655;
+    SYSKEY = 0x556699AA;
+
+    CFGCONbits.IOLOCK = 0;
+
+    // Assign OCx output to the selected pin.
+    *outputMapRegisters[WhichPin] =
+        mapChannel2PinSelConst[WhichChannel - 1];
+
+    bool success =
+        ((*outputMapRegisters[WhichPin] & 0xFu) ==
+         mapChannel2PinSelConst[WhichChannel - 1]);
+
+    // Lock PPS again.
+    CFGCONbits.IOLOCK = 1;
+    SYSKEY = 0x00000000;
+
+    return success;
 }
+
 
 /****************************************************************************
  Function

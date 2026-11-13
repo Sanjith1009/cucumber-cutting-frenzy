@@ -36,7 +36,8 @@
                     "${workspaceFolder}/FrameworkSource",
                     "${workspaceFolder}/ProjectHeaders",
                     "${workspaceFolder}/ProjectSource"
-                ]
+                ],
+                "linker.heap-size": "512"
             }
         },
         {

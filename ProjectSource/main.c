@@ -17,7 +17,21 @@
 
 #include "../ProjectHeaders/DM_Display.h"
 #include "../ProjectHeaders/PIC32_SPI_HAL.h"
+#include "../ProjectHeaders/ServoControl.h"
 
+// Delay approximately 1 ms, assuming a 40 MHz system clock.
+// Core timer counts at SYSCLK / 2.
+static void Delay1ms(void)
+{
+    const uint32_t ticksPerMs = 20000u;
+
+    uint32_t start = _CP0_GET_COUNT();
+
+    while ((uint32_t)(_CP0_GET_COUNT() - start) <
+           ticksPerMs)
+    {
+    }
+}
 
 void main(void)
 {
@@ -43,47 +57,31 @@ void main(void)
       // Blocks here for a fraction of a millisecond until all 4 modules are blanked
   }
 
-  // now initialize the Events and Services Framework and start it running
-  ErrorType = ES_Initialize(ES_Timer_RATE_1mS);
-  if (ErrorType == Success)
-  {
-    ErrorType = ES_Run();
-  }
-  //if we got to here, there was an error
-  switch (ErrorType)
-  {
-    case FailedPost:
+  // Initialize timer-arm servo PWM hardware
+  InitServoControl();
+
+  // Set timer-arm servo to center position
+  MoveTimerArmServo(20);
+
+  while (1)
     {
-      ErrorType = 0; // a hack to get a readable assert message
-      assert( FailedPost == ErrorType );
-      //DB_printf("Failed on attempt to Post\n");
+        // Sweep from 20 to 80 over 5 seconds
+        SweepTimerArmServo(20, 80, 5000);
+
+        while (IsTimerArmServoSweeping())
+        {
+            Delay1ms();
+            UpdateTimerArmServo();
+        }
+
+        // Sweep back from 80 to 20 over 5 seconds
+        SweepTimerArmServo(80, 20, 5000);
+
+        while (IsTimerArmServoSweeping())
+        {
+            Delay1ms();
+            UpdateTimerArmServo();
+        }
     }
-    break;
-    case FailedPointer:
-    {
-      ErrorType = 0; // a hack to get a readable assert message
-      assert( FailedPointer  == ErrorType );
-//      DB_printf("Failed on NULL pointer\n");
-    }
-    break;
-    case FailedInit:
-    {
-      ErrorType = 0; // a hack to get a readable assert message
-      assert( FailedInit  == ErrorType );
-//      DB_printf("Failed Initialization\n");
-    }
-    break;
-    default:
-    {
-      ErrorType = 0; // a hack to get a readable assert message
-      assert( FailedOther  == ErrorType );
-//      DB_printf("Other Failure\n");
-    }
-    break;
-  }
-  for ( ; ;)
-  {
-    ;
-  }
 }
 
