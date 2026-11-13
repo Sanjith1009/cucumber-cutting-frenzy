@@ -8,10 +8,25 @@
 #include "../ProjectHeaders/DM_Display.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include "ShiftRegister.h"
 
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
+
+#define NUM_GAME_LEDS 6u
+
+// Number of LEDs currently illuminated
+static uint8_t LitLEDCount = 0u;
+
+// Convert LED count into an 8-bit pattern
+static void UpdateLEDOutputs(void)
+{
+    uint8_t pattern =
+        (uint8_t)((1u << LitLEDCount) - 1u);
+
+    WriteShiftRegister(pattern);
+}
 
 bool InitLEDService(uint8_t Priority)
 {
@@ -81,7 +96,12 @@ bool PostLEDService(ES_Event_t ThisEvent)
 
 void DecreaseLitLEDs(void)
 {
-    // TODO: Reduce illuminated LED count
+    if (LitLEDCount > 0u)
+    {
+        LitLEDCount--;
+    }
+
+    UpdateLEDOutputs();
 }
 
 void FlashAllLEDs(void)
@@ -91,7 +111,8 @@ void FlashAllLEDs(void)
 
 void TurnOnAllLEDs(void)
 {
-    // TODO: Illuminate all six LEDs
+    LitLEDCount = NUM_GAME_LEDS;
+    UpdateLEDOutputs();
 }
 
 void SetLEDsPulsing(void)

@@ -14,6 +14,7 @@
 #include "../ProjectHeaders/ServoControl.h"
 #include "../ProjectHeaders/Potentiometer.h"
 #include "../ProjectHeaders/ShiftRegister.h"
+#include "../ProjectHeaders/LEDService.h"
 
 // Delay approximately 1 ms, assuming 40 MHz SYSCLK
 static void Delay1ms(void)
@@ -54,6 +55,7 @@ void main(void)
 
     // Initialize shift register using SPI2
     InitShiftRegister();
+    TurnOnAllLEDs();
 
     // Initialize servos and potentiometer
     InitServoControl();
@@ -61,6 +63,8 @@ void main(void)
 
     // Keep treat servo stationary
     MoveServo(2, 50);
+    uint16_t ledTestCounter = 0;
+    uint8_t ledDecrements = 0;
 
     while (1)
     {
@@ -81,7 +85,25 @@ void main(void)
             Delay1ms();
         }
 
-        // Test SPI2 output using pattern 0xB2
-        WriteShiftRegister(0xB2);
+      ledTestCounter++;
+
+      // Approximately once per second
+      if (ledTestCounter >= 100u)
+      {
+          ledTestCounter = 0u;
+
+          if (ledDecrements < 6u)
+          {
+              // Turn off one additional LED
+              DecreaseLitLEDs();
+              ledDecrements++;
+          }
+          else
+          {
+              // Restart with all six LEDs on
+              TurnOnAllLEDs();
+              ledDecrements = 0u;
+          }
+      } 
     }
 }

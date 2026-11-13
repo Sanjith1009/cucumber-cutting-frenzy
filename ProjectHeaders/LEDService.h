@@ -6,6 +6,7 @@
 
 #include "ES_Events.h"
 #include "ES_Port.h"                // needed for definition of REENTRANT
+
 // Public Function Prototypes
 
 void DecreaseLitLEDs(void);
