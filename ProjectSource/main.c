@@ -55,7 +55,7 @@ void main(void)
 
     // Initialize shift register using SPI2
     InitShiftRegister();
-    TurnOnAllLEDs();
+    FlashAllLEDs();
 
     // Initialize servos and potentiometer
     InitServoControl();
@@ -87,23 +87,6 @@ void main(void)
 
       ledTestCounter++;
 
-      // Approximately once per second
-      if (ledTestCounter >= 100u)
-      {
-          ledTestCounter = 0u;
-
-          if (ledDecrements < 6u)
-          {
-              // Turn off one additional LED
-              DecreaseLitLEDs();
-              ledDecrements++;
-          }
-          else
-          {
-              // Restart with all six LEDs on
-              TurnOnAllLEDs();
-              ledDecrements = 0u;
-          }
-      } 
+      LEDService_Update();
     }
 }

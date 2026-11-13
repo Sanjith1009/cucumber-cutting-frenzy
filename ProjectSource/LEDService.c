@@ -9,17 +9,25 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "ShiftRegister.h"
+#include <xc.h>
 
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
 
 #define NUM_GAME_LEDS 6u
+#define ALL_LEDS_MASK 0x3Fu
 
-// Number of LEDs currently illuminated
+// At 40 MHz SYSCLK, CP0 counts at 20 MHz.
+// 5,000,000 ticks = 250 ms.
+#define FLASH_INTERVAL_TICKS 5000000u
+
 static uint8_t LitLEDCount = 0u;
+static bool LEDsFlashing = false;
+static bool FlashState = false;
+static uint32_t LastFlashTime = 0u;
 
-// Convert LED count into an 8-bit pattern
+// Update the six LEDs according to LitLEDCount
 static void UpdateLEDOutputs(void)
 {
     uint8_t pattern =
@@ -94,8 +102,25 @@ bool PostLEDService(ES_Event_t ThisEvent)
   return ES_PostToService(MyPriority, ThisEvent);
 }
 
+
+void TurnOnAllLEDs(void)
+{
+    // Stop any flashing animation
+    LEDsFlashing = false;
+
+    // Illuminate all six LEDs
+    LitLEDCount = NUM_GAME_LEDS;
+
+    UpdateLEDOutputs();
+}
+
+
 void DecreaseLitLEDs(void)
 {
+    // Stop flashing before changing LED count
+    LEDsFlashing = false;
+
+    // Decrease the number of illuminated LEDs
     if (LitLEDCount > 0u)
     {
         LitLEDCount--;
@@ -104,16 +129,25 @@ void DecreaseLitLEDs(void)
     UpdateLEDOutputs();
 }
 
+
 void FlashAllLEDs(void)
 {
-    // TODO: Start LED flashing pattern
+    // Don't restart the timing if already flashing
+    if (LEDsFlashing)
+    {
+        return;
+    }
+
+    LEDsFlashing = true;
+    FlashState = true;
+
+    // Record when flashing started
+    LastFlashTime = _CP0_GET_COUNT();
+
+    // Begin with all six LEDs illuminated
+    WriteShiftRegister(ALL_LEDS_MASK);
 }
 
-void TurnOnAllLEDs(void)
-{
-    LitLEDCount = NUM_GAME_LEDS;
-    UpdateLEDOutputs();
-}
 
 void SetLEDsPulsing(void)
 {
@@ -125,3 +159,34 @@ void SetLEDBrightness(uint16_t potValue)
     // TODO: Adjust LED brightness
     (void)potValue;
 }
+
+
+void LEDService_Update(void)
+{
+    if (!LEDsFlashing)
+    {
+        return;
+    }
+
+    uint32_t currentTime = _CP0_GET_COUNT();
+
+    // Check whether 250 ms have elapsed
+    if ((uint32_t)(currentTime - LastFlashTime)
+        >= FLASH_INTERVAL_TICKS)
+    {
+        LastFlashTime = currentTime;
+
+        // Alternate between ON and OFF
+        FlashState = !FlashState;
+
+        if (FlashState)
+        {
+            WriteShiftRegister(ALL_LEDS_MASK);
+        }
+        else
+        {
+            WriteShiftRegister(0x00);
+        }
+    }
+}
+

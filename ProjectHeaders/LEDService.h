@@ -14,6 +14,7 @@ void FlashAllLEDs(void);
 void TurnOnAllLEDs(void);
 void SetLEDsPulsing(void);
 void SetLEDBrightness(uint16_t potValue);
+void LEDService_Update(void);
 
 bool InitLEDService(uint8_t Priority);
 ES_Event_t RunLEDService(ES_Event_t ThisEvent);
