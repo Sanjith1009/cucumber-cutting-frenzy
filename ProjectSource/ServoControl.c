@@ -4,149 +4,225 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// Servo PWM configuration
-#define SERVO_CHANNEL      1u
-#define SERVO_OUTPUT_PIN   PWM_RPB3
+// Servo configuration
+#define NUM_SERVOS          2u
 
-// Timer tick = 0.4 microseconds
-#define SERVO_MIN_TICKS    2500u  // 1.0 ms
-#define SERVO_CENTER_TICKS 3750u  // 1.5 ms
-#define SERVO_MAX_TICKS    5000u  // 2.0 ms
+#define TIMER_ARM_SERVO     1u
+#define SECOND_SERVO        2u
+
+// PWM timer ticks (0.4 us per tick)
+#define SERVO_MIN_TICKS     2500u
+#define SERVO_CENTER_TICKS  3750u
+#define SERVO_MAX_TICKS     5000u
 
 static bool ServoInitialized = false;
+
+// Independent sweep state for each servo
+typedef struct
+{
+    uint8_t start;
+    uint8_t end;
+    uint16_t duration;
+    uint16_t elapsed;
+    bool active;
+} ServoSweep_t;
+
+static ServoSweep_t sweeps[NUM_SERVOS];
 
 void InitServoControl(void)
 {
     ServoInitialized = false;
 
-    // Configure one PWM channel.
-    if (!PWMSetup_BasicConfig(1))
+    if (!PWMSetup_BasicConfig(NUM_SERVOS))
     {
         return;
     }
 
-    // Use Timer2 for OC1.
-    if (!PWMSetup_AssignChannelToTimer(
-            SERVO_CHANNEL, _Timer2_))
+    // Both servos use Timer2
+    if (!PWMSetup_AssignChannelToTimer(1, _Timer2_))
     {
         return;
     }
 
-    // Initialize at center (1.5 ms pulse).
+    if (!PWMSetup_AssignChannelToTimer(2, _Timer2_))
+    {
+        return;
+    }
+
+    // Both servos begin at center
     if (!PWMOperate_SetPulseWidthOnChannel(
-            SERVO_CENTER_TICKS, SERVO_CHANNEL))
+            SERVO_CENTER_TICKS, 1))
     {
         return;
     }
 
-    // Route OC1 to RB3.
-    if (!PWMSetup_MapChannelToOutputPin(
-            SERVO_CHANNEL, SERVO_OUTPUT_PIN))
+    if (!PWMOperate_SetPulseWidthOnChannel(
+            SERVO_CENTER_TICKS, 2))
     {
         return;
+    }
+
+    // Servo 1: OC1 -> RB3
+    if (!PWMSetup_MapChannelToOutputPin(1, PWM_RPB3))
+    {
+        return;
+    }
+
+    // Servo 2: OC2 -> RB5
+    if (!PWMSetup_MapChannelToOutputPin(2, PWM_RPB5))
+    {
+        return;
+    }
+
+    // Reset sweep state
+    for (uint8_t i = 0; i < NUM_SERVOS; i++)
+    {
+        sweeps[i].active = false;
     }
 
     ServoInitialized = true;
 }
 
+// Move either servo immediately to a position
+void MoveServo(uint8_t servo, uint8_t position)
+{
+    if (!ServoInitialized || servo < 1 || servo > NUM_SERVOS)
+    {
+        return;
+    }
+
+    if (position > 100)
+    {
+        position = 100;
+    }
+
+    uint16_t pulseTicks =
+        SERVO_MIN_TICKS +
+        (uint16_t)(((uint32_t)position *
+        (SERVO_MAX_TICKS - SERVO_MIN_TICKS)) / 100u);
+
+    PWMOperate_SetPulseWidthOnChannel(pulseTicks, servo);
+}
+
+// Preserve original function
 void MoveTimerArmServo(uint8_t position)
+{
+    MoveServo(TIMER_ARM_SERVO, position);
+}
+
+// Control second servo independently
+void MoveTreatServo(uint8_t position)
+{
+    MoveServo(SECOND_SERVO, position);
+}
+
+// Start a timed sweep on either servo
+void SweepServo(uint8_t servo,
+                uint8_t startPosition,
+                uint8_t endPosition,
+                uint16_t durationMs)
+{
+    if (!ServoInitialized || servo < 1 || servo > NUM_SERVOS)
+    {
+        return;
+    }
+
+    if (startPosition > 100)
+    {
+        startPosition = 100;
+    }
+
+    if (endPosition > 100)
+    {
+        endPosition = 100;
+    }
+
+    uint8_t index = servo - 1;
+
+    sweeps[index].start = startPosition;
+    sweeps[index].end = endPosition;
+    sweeps[index].duration = durationMs;
+    sweeps[index].elapsed = 0;
+    sweeps[index].active = false;
+
+    MoveServo(servo, startPosition);
+
+    if (durationMs == 0)
+    {
+        MoveServo(servo, endPosition);
+        return;
+    }
+
+    sweeps[index].active = true;
+}
+
+// Update both servos once every 1 ms
+void UpdateServos(void)
 {
     if (!ServoInitialized)
     {
         return;
     }
 
-    // Limit position to 0-100.
-    if (position > 100u)
+    for (uint8_t i = 0; i < NUM_SERVOS; i++)
     {
-        position = 100u;
+        if (!sweeps[i].active)
+        {
+            continue;
+        }
+
+        ServoSweep_t *sweep = &sweeps[i];
+
+        if (sweep->elapsed < sweep->duration)
+        {
+            sweep->elapsed++;
+        }
+
+        int32_t difference =
+            (int32_t)sweep->end - (int32_t)sweep->start;
+
+        int32_t position =
+            (int32_t)sweep->start +
+            (difference * sweep->elapsed) / sweep->duration;
+
+        MoveServo(i + 1, (uint8_t)position);
+
+        if (sweep->elapsed >= sweep->duration)
+        {
+            MoveServo(i + 1, sweep->end);
+            sweep->active = false;
+        }
     }
-
-    // Convert 0-100 to 2500-5000 timer ticks.
-    uint16_t pulseTicks =
-        SERVO_MIN_TICKS +
-        (uint16_t)(((uint32_t)position *
-        (SERVO_MAX_TICKS - SERVO_MIN_TICKS)) / 100u);
-
-    PWMOperate_SetPulseWidthOnChannel(
-        pulseTicks, SERVO_CHANNEL);
 }
 
-// Sweep state
-static uint8_t sweepStart = 0;
-static uint8_t sweepEnd = 0;
-static uint16_t sweepDuration = 0;
-static uint16_t sweepElapsed = 0;
-static bool sweepActive = false;
+// Returns true if selected servo is sweeping
+bool IsServoSweeping(uint8_t servo)
+{
+    if (servo < 1 || servo > NUM_SERVOS)
+    {
+        return false;
+    }
 
-/**
- * Starts a servo sweep.
- *
- * startPosition: Starting position (0-100)
- * endPosition:   Ending position (0-100)
- * durationMs:    Total time to complete the sweep
- */
+    return sweeps[servo - 1].active;
+}
+
+// Compatibility with your original timer-arm functions
 void SweepTimerArmServo(uint8_t startPosition,
                         uint8_t endPosition,
                         uint16_t durationMs)
 {
-    // Clamp positions to valid range
-    if (startPosition > 100)
-        startPosition = 100;
-
-    if (endPosition > 100)
-        endPosition = 100;
-
-    sweepStart = startPosition;
-    sweepEnd = endPosition;
-    sweepDuration = durationMs;
-    sweepElapsed = 0;
-
-    // Move to starting position
-    MoveTimerArmServo(sweepStart);
-
-    // Handle zero-duration sweeps
-    if (durationMs == 0)
-    {
-        MoveTimerArmServo(sweepEnd);
-        sweepActive = false;
-        return;
-    }
-
-    sweepActive = true;
+    SweepServo(TIMER_ARM_SERVO,
+               startPosition,
+               endPosition,
+               durationMs);
 }
 
-/**
- * Call this once every 1 ms.
- * Updates the commanded servo position.
- */
 void UpdateTimerArmServo(void)
 {
-    if (!sweepActive)
-        return;
-
-    if (sweepElapsed < sweepDuration)
-        sweepElapsed++;
-
-    // Signed math supports both directions.
-    int32_t difference =
-        (int32_t)sweepEnd - (int32_t)sweepStart;
-
-    int32_t position =
-        (int32_t)sweepStart +
-        (difference * sweepElapsed) / sweepDuration;
-
-    MoveTimerArmServo((uint8_t)position);
-
-    // Stop exactly at the requested endpoint.
-    if (sweepElapsed >= sweepDuration)
-    {
-        MoveTimerArmServo(sweepEnd);
-        sweepActive = false;
-    }
+    UpdateServos();
 }
 
 bool IsTimerArmServoSweeping(void)
 {
-    return sweepActive;
+    return IsServoSweeping(TIMER_ARM_SERVO);
 }

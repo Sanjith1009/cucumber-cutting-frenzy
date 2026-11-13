@@ -275,6 +275,7 @@ typedef enum
   ES_PLAY,
   ES_BEAM_UNBROKEN,
   ES_CHOP,
+  ES_TREAT,
 
   // LED events
   ES_Update_Step,

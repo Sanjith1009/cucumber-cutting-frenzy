@@ -1,11 +1,5 @@
-/****************************************************************************
- Module
-     main.c
- Description
-     starter main() function for Events and Services Framework applications
- Notes
 
-*****************************************************************************/
+#include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -19,69 +13,68 @@
 #include "../ProjectHeaders/PIC32_SPI_HAL.h"
 #include "../ProjectHeaders/ServoControl.h"
 
-// Delay approximately 1 ms, assuming a 40 MHz system clock.
-// Core timer counts at SYSCLK / 2.
+// Delay approximately 1 ms, assuming 40 MHz SYSCLK
 static void Delay1ms(void)
 {
     const uint32_t ticksPerMs = 20000u;
-
     uint32_t start = _CP0_GET_COUNT();
 
-    while ((uint32_t)(_CP0_GET_COUNT() - start) <
-           ticksPerMs)
+    while ((uint32_t)(_CP0_GET_COUNT() - start) < ticksPerMs)
     {
     }
 }
 
 void main(void)
 {
-  ES_Return_t ErrorType = Success;
+    // Initialize PIC32 hardware
+    _HW_PIC32Init();
 
-  _HW_PIC32Init(); // basic PIC hardware init
-  // Your hardware initialization function calls go here
-  // Initialize SPI peripheral
-  SPISetup_BasicConfig(SPI_SPI1);
-  SPISetup_SetLeader(SPI_SPI1, 0);
-  SPISetup_SetBitTime(SPI_SPI1, 100); // 100ns = 10MHz clock
-  SPISetup_MapSSOutput(SPI_SPI1, SPI_RPA0);
-  SPISetup_MapSDOutput(SPI_SPI1, SPI_RPA1);
-  SPISetup_SetClockIdleState(SPI_SPI1, 1);
-  SPISetup_SetActiveEdge(SPI_SPI1, 0);
-  SPISetup_SetXferWidth(SPI_SPI1, SPI_16BIT);
-  SPISetEnhancedBuffer(SPI_SPI1, true);
-  SPISetup_EnableSPI(SPI_SPI1);
+    // Initialize SPI for MAX7219 display
+    SPISetup_BasicConfig(SPI_SPI1);
+    SPISetup_SetLeader(SPI_SPI1, 0);
+    SPISetup_SetBitTime(SPI_SPI1, 100);
+    SPISetup_MapSSOutput(SPI_SPI1, SPI_RPA0);
+    SPISetup_MapSDOutput(SPI_SPI1, SPI_RPA1);
+    SPISetup_SetClockIdleState(SPI_SPI1, 1);
+    SPISetup_SetActiveEdge(SPI_SPI1, 0);
+    SPISetup_SetXferWidth(SPI_SPI1, SPI_16BIT);
+    SPISetEnhancedBuffer(SPI_SPI1, true);
+    SPISetup_EnableSPI(SPI_SPI1);
 
-  // Force MAX7219 to clear its internal memory and shut off random LEDs
-  DM_ClearDisplayBuffer();
-  while (DM_TakeInitDisplayStep() == false) {
-      // Blocks here for a fraction of a millisecond until all 4 modules are blanked
-  }
+    // Initialize MAX7219 display
+    DM_ClearDisplayBuffer();
 
-  // Initialize timer-arm servo PWM hardware
-  InitServoControl();
-
-  // Set timer-arm servo to center position
-  MoveTimerArmServo(20);
-
-  while (1)
+    while (DM_TakeInitDisplayStep() == false)
     {
-        // Sweep from 20 to 80 over 5 seconds
-        SweepTimerArmServo(20, 80, 5000);
+    }
 
-        while (IsTimerArmServoSweeping())
+    // Initialize both servos
+    InitServoControl();
+
+    // Set initial positions
+    MoveTimerArmServo(20);
+    MoveServo(2, 80);
+
+    while (1)
+    {
+        // Both servos sweep in opposite directions
+        SweepServo(1, 20, 80, 5000);
+        SweepServo(2, 80, 20, 5000);
+
+        while (IsServoSweeping(1) || IsServoSweeping(2))
         {
             Delay1ms();
-            UpdateTimerArmServo();
+            UpdateServos();
         }
 
-        // Sweep back from 80 to 20 over 5 seconds
-        SweepTimerArmServo(80, 20, 5000);
+        // Reverse both servos
+        SweepServo(1, 80, 20, 5000);
+        SweepServo(2, 20, 80, 5000);
 
-        while (IsTimerArmServoSweeping())
+        while (IsServoSweeping(1) || IsServoSweeping(2))
         {
             Delay1ms();
-            UpdateTimerArmServo();
+            UpdateServos();
         }
     }
 }
-
