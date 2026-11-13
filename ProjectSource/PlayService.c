@@ -6,6 +6,7 @@
 #include "dbprintf.h"
 #include "../ProjectHeaders/DeadmanHandling.h"
 #include "../ProjectHeaders/DM_Display.h"
+#include "../ProjectHeaders/GameFSM.h"
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -125,6 +126,14 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                     PostSetupService(ResetEvent);
                 }
             }
+            break;
+
+            case ES_INIT:
+                GameFSM_Init();
+            break;
+            
+            case ES_NEW_KEY:
+                GameFSM_HandleKey((char)ThisEvent.EventParam);
             break;
         // case ES_DISPENSE_TREATS:
         //     for (size_t i = 0; i < ThisEvent.EventParam; i++) {
