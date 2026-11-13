@@ -8,31 +8,46 @@
 #include "ES_Port.h"
 
 #include "../ProjectHeaders/ShiftRegister.h"
+#include "../ProjectHeaders/ServoControl.h"
+#include "../ProjectHeaders/Potentiometer.h"
 
-// Assumes SYSCLK = 40 MHz, PBCLK = 20 MHz
-#define FLASH_TICKS 10000000u  // 500 ms
+// Assumes SYSCLK = 40 MHz and PBCLK = 20 MHz
+// PIC32 CP0 increments at SYSCLK / 2 = 20 MHz
 
-static void ConfigureSerialAndSPIPins(void)
+#define FLASH_TICKS   10000000u  // 500 ms
+#define POT_TICKS      1000000u  // 50 ms
+#define REPORT_TICKS   5000000u  // 250 ms
+
+// ====================================================
+// PIN MAPPING
+// ====================================================
+
+static void ConfigurePinMappings(void)
 {
     uint32_t previousStatus =
         __builtin_disable_interrupts();
 
-    // Unlock Peripheral Pin Select (PPS)
     SYSKEY = 0;
     SYSKEY = 0xAA996655;
     SYSKEY = 0x556699AA;
     CFGCONbits.IOLOCK = 0;
 
-    // SPI2 data: SDO2 -> RB6 (pin 15)
-    RPB6R = 0b0100;
+    // SPI2 data to shift register
+    // RB6, physical pin 15
+    RPB6R = 0b0100;   // SDO2
 
-    // UART2 receive: RB8 (pin 17)
+    // UART2 for D-SUN USB-to-TTL adapter
+    // RB8 RX, physical pin 17
+    // RB9 TX, physical pin 18
     U2RXR = 0b0100;
-
-    // UART2 transmit: RB9 (pin 18)
     RPB9R = 0b0010;
 
-    // Lock PPS
+    // Servo PWM outputs
+    // RB3, physical pin 7
+    // RB5, physical pin 14
+    RPB3R = 0b0101;   // OC1
+    RPB5R = 0b0101;   // OC2
+
     CFGCONbits.IOLOCK = 1;
     SYSKEY = 0;
 
@@ -42,14 +57,19 @@ static void ConfigureSerialAndSPIPins(void)
     }
 }
 
+// ====================================================
+// UART2 SERIAL COMMUNICATION
+// ====================================================
+
 static void UART2_Init(void)
 {
     U2MODE = 0;
     U2STA = 0;
 
-    // Configure pin directions
-    TRISBSET = (1u << 8); // RB8 input
-    TRISBCLR = (1u << 9); // RB9 output
+    // Configure digital UART pins
+    ANSELBCLR = (1u << 8) | (1u << 9);
+    TRISBSET = (1u << 8);
+    TRISBCLR = (1u << 9);
 
     // 9600 baud, 8N1, PBCLK = 20 MHz
     U2MODEbits.BRGH = 0;
@@ -79,41 +99,86 @@ static void SerialWriteString(const char *str)
     }
 }
 
+// Print an unsigned integer without printf
+static void SerialWriteUInt(uint16_t value)
+{
+    char digits[6];
+    uint8_t count = 0;
+
+    do
+    {
+        digits[count++] =
+            '0' + (char)(value % 10u);
+
+        value /= 10u;
+    }
+    while (value > 0u);
+
+    while (count > 0u)
+    {
+        SerialWriteChar(digits[--count]);
+    }
+}
+
+// ====================================================
+// MAIN HARDWARE TEST
+// ====================================================
+
 int main(void)
 {
     _HW_PIC32Init();
 
-    // Map SPI2 and UART2 before PPS gets locked
-    ConfigureSerialAndSPIPins();
+    // Set all peripheral pin mappings together
+    ConfigurePinMappings();
 
-    // Initialize existing SPI2 shift register driver
+    // Initialize hardware modules
     InitShiftRegister();
-
-    // Initialize UART2
     UART2_Init();
+    InitServoControl();
+    InitPotentiometer();
 
-    // Start with all LEDs off
+    // Treat servo remains stationary
+    MoveServo(2, 50);
+
+    // Start with LEDs OFF
     WriteShiftRegister(0x00);
 
-    SerialWriteString("\r\nPIC32 LED Controller Ready!\r\n");
-    SerialWriteString("a = All ON\r\n");
-    SerialWriteString("0 = All OFF\r\n");
+    SerialWriteString("\r\n");
+    SerialWriteString("============================\r\n");
+    SerialWriteString("PIC32 HARDWARE TEST HARNESS\r\n");
+    SerialWriteString("============================\r\n");
+    SerialWriteString("a = All LEDs ON\r\n");
+    SerialWriteString("0 = All LEDs OFF\r\n");
     SerialWriteString("1-6 = Individual LED\r\n");
     SerialWriteString("f = Flash all LEDs\r\n");
+    SerialWriteString("\r\n");
+    SerialWriteString("Potentiometer controls timer-arm servo\r\n");
+    SerialWriteString("ADC and servo commands reported every 250 ms\r\n");
 
     bool flashing = false;
     bool flashState = false;
-    uint32_t lastFlash = _CP0_GET_COUNT();
+
+    uint16_t potValue = 0u;
+    uint8_t servoPosition = 50u;
+
+    uint32_t now = _CP0_GET_COUNT();
+    uint32_t lastFlash = now;
+    uint32_t lastPot = now;
+    uint32_t lastReport = now;
 
     while (1)
     {
-        // Recover from UART receive overflow
+        now = _CP0_GET_COUNT();
+
+        // =========================================
+        // SERIAL LED COMMANDS
+        // =========================================
+
         if (U2STAbits.OERR)
         {
             U2STAbits.OERR = 0;
         }
 
-        // Check for incoming serial characters
         if (U2STAbits.URXDA)
         {
             char received = (char)U2RXREG;
@@ -135,7 +200,7 @@ int main(void)
                 case 'f':
                     flashing = true;
                     flashState = true;
-                    lastFlash = _CP0_GET_COUNT();
+                    lastFlash = now;
                     WriteShiftRegister(0x3F);
                     SerialWriteString("Flashing LEDs\r\n");
                     break;
@@ -158,16 +223,16 @@ int main(void)
                     break;
 
                 default:
-                    // Ignore newline and unknown commands
                     break;
             }
         }
 
-        // Nonblocking 500 ms flash interval
+        // =========================================
+        // NONBLOCKING LED FLASHING
+        // =========================================
+
         if (flashing)
         {
-            uint32_t now = _CP0_GET_COUNT();
-
             if ((uint32_t)(now - lastFlash)
                 >= FLASH_TICKS)
             {
@@ -178,6 +243,52 @@ int main(void)
                     flashState ? 0x3F : 0x00
                 );
             }
+        }
+
+        // =========================================
+        // POTENTIOMETER + SERVO CONTROL
+        // =========================================
+
+        if ((uint32_t)(now - lastPot)
+            >= POT_TICKS)
+        {
+            lastPot = now;
+
+            // Read ADC: 0 to 1023
+            potValue = ReadPotentiometer();
+
+            // Map ADC to tested servo command range
+            uint8_t newPosition =
+                20u + (uint8_t)(
+                    ((uint32_t)potValue * 60u) / 1023u
+                );
+
+            // Only update PWM if position changes
+            if (newPosition != servoPosition)
+            {
+                servoPosition = newPosition;
+                MoveTimerArmServo(servoPosition);
+            }
+        }
+
+        // =========================================
+        // SERIAL POSITION REPORTING
+        // =========================================
+
+        if ((uint32_t)(now - lastReport)
+            >= REPORT_TICKS)
+        {
+            lastReport = now;
+
+            SerialWriteString("Pot ADC: ");
+            SerialWriteUInt(potValue);
+
+            SerialWriteString(" / 1023");
+
+            SerialWriteString("  |  Servo command: ");
+            SerialWriteUInt(servoPosition);
+
+            SerialWriteString(" / 100\r\n");
         }
     }
 }
