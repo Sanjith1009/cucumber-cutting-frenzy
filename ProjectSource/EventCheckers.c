@@ -41,6 +41,7 @@
 #include "EventCheckers.h"
 #include "PIC32_AD_Lib.h"
 #include "Potentiometer.h"
+#include "LEDService.h"
 // This is the event checking function sample. It is not intended to be
 // included in the module. It is only here as a sample to guide you in writing
 // your own event checkers
@@ -175,3 +176,8 @@ bool PotentiometerRead(void)
   return returnVal;
 }
 
+bool CheckLEDAnimation(void)
+{
+  LEDService_Update();
+  return false; // This function doesn't generate events, it just updates the LED service
+}

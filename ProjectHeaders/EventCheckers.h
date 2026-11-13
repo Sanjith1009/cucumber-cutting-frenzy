@@ -24,5 +24,6 @@
 bool Check4Keystroke(void);
 bool Check4ChopButton(void);
 bool PotentiometerRead(void);
+bool CheckLEDAnimation(void);
 
 #endif /* EventCheckers_H */

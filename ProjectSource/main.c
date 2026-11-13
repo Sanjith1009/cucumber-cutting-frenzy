@@ -30,7 +30,7 @@ int main(void)
     MoveServo(2, 50);
 
     // Turn on all six game LEDs
-    TurnOnAllLEDs();
+    FlashAllLEDs();
 
     // Initialize and run Events & Services Framework
     if (ES_Initialize(ES_Timer_RATE_1mS) == Success)
