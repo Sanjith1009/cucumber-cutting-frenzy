@@ -12,6 +12,7 @@
 #include "../ProjectHeaders/DM_Display.h"
 #include "../ProjectHeaders/PIC32_SPI_HAL.h"
 #include "../ProjectHeaders/ServoControl.h"
+#include "../ProjectHeaders/Potentiometer.h"
 
 // Delay approximately 1 ms, assuming 40 MHz SYSCLK
 static void Delay1ms(void)
@@ -48,33 +49,32 @@ void main(void)
     {
     }
 
-    // Initialize both servos
+    
+    // Initialize hardware
     InitServoControl();
+    InitPotentiometer();
 
-    // Set initial positions
-    MoveTimerArmServo(20);
-    MoveServo(2, 80);
+    // Keep treat servo stationary
+    MoveServo(2, 50);
 
     while (1)
     {
-        // Both servos sweep in opposite directions
-        SweepServo(1, 20, 80, 5000);
-        SweepServo(2, 80, 20, 5000);
+        // Read ADC: 0 to 1023
+        uint16_t potValue = ReadPotentiometer();
 
-        while (IsServoSweeping(1) || IsServoSweeping(2))
+        // Map ADC value to a conservative
+        // servo position range: 20 to 80
+        uint8_t servoPosition =
+            20u + (uint8_t)(((uint32_t)potValue * 60u)
+                             / 1023u);
+
+        // Timer-arm servo follows potentiometer
+        MoveTimerArmServo(servoPosition);
+
+        // Approximately 10 ms between updates
+        for (uint8_t i = 0; i < 10; i++)
         {
             Delay1ms();
-            UpdateServos();
-        }
-
-        // Reverse both servos
-        SweepServo(1, 80, 20, 5000);
-        SweepServo(2, 20, 80, 5000);
-
-        while (IsServoSweeping(1) || IsServoSweeping(2))
-        {
-            Delay1ms();
-            UpdateServos();
         }
     }
 }
