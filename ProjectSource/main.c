@@ -25,6 +25,80 @@ static void Delay1ms(void)
     }
 }
 
+#define HC595_LATCH_MASK (1u << 11)  // RB11, pin 22
+
+static void InitShiftRegister(void)
+{
+    // Reset SPI2 only; SPI1 remains unchanged.
+    SPI2CON = 0;
+    SPI2CON2 = 0;
+
+    SPISetup_BasicConfig(SPI_SPI2);
+
+    // Set SPI2 as master without using the HAL's
+    // incorrect clock-pin direction configuration.
+    SPI2CONbits.MSTEN = 1;
+    SPI2CONbits.SMP = 0;
+    SPI2CONbits.MSSEN = 0;
+    SPI2CONbits.ENHBUF = 0;
+
+    // SCK2: RB15, physical pin 26
+    ANSELBCLR = (1u << 15);
+    TRISBCLR = (1u << 15);
+
+    // SDO2: RB6, physical pin 15
+    SPISetup_MapSDOutput(SPI_SPI2, SPI_RPB6);
+
+    // M74HC595 shifts on rising clock edges.
+    // SPI mode 0: clock idle LOW, data changes
+    // on falling edges.
+    SPISetup_SetClockIdleState(SPI_SPI2, 0);
+    SPISetup_SetActiveEdge(SPI_SPI2, 1);
+
+    // 100 kHz clock assuming 20 MHz PBCLK
+    SPISetup_SetBitTime(SPI_SPI2, 10000);
+
+    // Shift register needs 8-bit transfers
+    SPISetup_SetXferWidth(SPI_SPI2, SPI_8BIT);
+
+    // Latch: RB11, physical pin 22
+    LATBCLR = HC595_LATCH_MASK;
+    TRISBCLR = HC595_LATCH_MASK;
+
+    // Clear any receive-overflow condition
+    SPI2STATCLR = _SPI2STAT_SPIROV_MASK;
+
+    SPISetup_EnableSPI(SPI_SPI2);
+}
+
+static void WriteShiftRegister(uint8_t value)
+{
+    LATBCLR = HC595_LATCH_MASK;
+
+    // Wait for space in the transmit buffer
+    while (SPI2STATbits.SPITBF)
+    {
+    }
+
+    // Transmit 8 bits
+    SPI2BUF = value;
+
+    // Wait until transmission finishes
+    while (!SPI2STATbits.SPIRBF)
+    {
+    }
+
+    // Clear receive buffer flag
+    volatile uint32_t dummy = SPI2BUF;
+    (void)dummy;
+
+    // Pulse latch HIGH for 1 ms
+    // Intentionally long for oscilloscope testing
+    LATBSET = HC595_LATCH_MASK;
+    Delay1ms();
+    LATBCLR = HC595_LATCH_MASK;
+}
+
 void main(void)
 {
     // Initialize PIC32 hardware
@@ -48,6 +122,9 @@ void main(void)
     while (DM_TakeInitDisplayStep() == false)
     {
     }
+
+    // Testing the Shift sgister initlaization
+    InitShiftRegister();
 
     
     // Initialize hardware
@@ -76,5 +153,7 @@ void main(void)
         {
             Delay1ms();
         }
+        WriteShiftRegister(0x81);  // Example pattern to test the shift register
+
     }
 }
