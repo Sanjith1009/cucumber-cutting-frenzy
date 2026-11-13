@@ -22,5 +22,7 @@
 // prototypes for event checkers
 
 bool Check4Keystroke(void);
+bool Check4ChopButton(void);
+bool PotentiometerRead(void);
 
 #endif /* EventCheckers_H */

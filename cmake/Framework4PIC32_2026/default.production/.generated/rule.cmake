@@ -7,14 +7,14 @@ function(Framework4PIC32_2026_default_default_XC32_assemble_rule target)
         "-g"
         "${ASSEMBLER_PRE}"
         "-mprocessor=32MX170F256B"
-        "-Wa,--defsym=__MPLAB_BUILD=1${MP_EXTRA_AS_POST},--defsym=__MPLAB_DEBUGGER_SNAP=1,-Ic:/Users/sanji/MPLABProjects/Me218aLab3Part4/FrameworkHeaders"
+        "-Wa,--defsym=__MPLAB_BUILD=1${MP_EXTRA_AS_POST},--defsym=__MPLAB_DEBUGGER_SNAP=1,-Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders"
         "-mdfp=${PACK_REPO_PATH}/Microchip/PIC32MX_DFP/1.7.380")
     list(REMOVE_ITEM options "")
     target_compile_options(${target} PRIVATE "${options}")
     target_include_directories(${target}
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/FrameworkSource"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/ProjectHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/ProjectSource")
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource")
 endfunction()
 function(Framework4PIC32_2026_default_default_XC32_assembleWithPreprocess_rule target)
     set(options
@@ -44,10 +44,10 @@ function(Framework4PIC32_2026_default_default_XC32_compile_rule target)
         PRIVATE "__MPLAB_DEBUGGER_SNAP=1"
         PRIVATE "XPRJ_default=default")
     target_include_directories(${target}
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/FrameworkHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/FrameworkSource"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/ProjectHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/ProjectSource")
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource")
 endfunction()
 function(Framework4PIC32_2026_default_default_XC32_compile_cpp_rule target)
     set(options
@@ -64,10 +64,10 @@ function(Framework4PIC32_2026_default_default_XC32_compile_cpp_rule target)
     target_compile_options(${target} PRIVATE "${options}")
     target_compile_definitions(${target} PRIVATE "XPRJ_default=default")
     target_include_directories(${target}
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/FrameworkHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/FrameworkSource"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/ProjectHeaders"
-        PRIVATE "c:/Users/sanji/MPLABProjects/Me218aLab3Part4/ProjectSource")
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders"
+        PRIVATE "c:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource")
 endfunction()
 function(Framework4PIC32_2026_default_dependentObject_rule target)
     set(options

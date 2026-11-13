@@ -71,3 +71,5 @@ uint16_t ReadPotentiometer(void)
     // Return 10-bit ADC result (0 to 1023)
     return (uint16_t)ADC1BUF0;
 }
+
+

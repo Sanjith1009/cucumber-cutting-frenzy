@@ -18,7 +18,7 @@
  -------------- ---     --------
  08/06/13 13:36 jec     initial version
 ****************************************************************************/
-
+#include <stdlib.h>
 // this will pull in the symbolic definitions for events, which we will want
 // to post in response to detecting events
 #include "ES_Configure.h"
@@ -39,7 +39,8 @@
 // include our own prototypes to insure consistency between header &
 // actual functionsdefinition
 #include "EventCheckers.h"
-
+#include "PIC32_AD_Lib.h"
+#include "Potentiometer.h"
 // This is the event checking function sample. It is not intended to be
 // included in the module. It is only here as a sample to guide you in writing
 // your own event checkers
@@ -85,7 +86,9 @@ bool Check4Lock(void)
 }
 
 #endif
-
+static uint8_t LastButtonState = 1;
+uint32_t adcResults[1];
+static uint8_t LastPotentiometerState = 0;
 /****************************************************************************
  Function
    Check4Keystroke
@@ -117,5 +120,58 @@ bool Check4Keystroke(void)
     return true;
   }
   return false;
+}
+
+bool Check4ChopButton(void)
+{
+  bool returnVal = false;
+    
+    // 1. Read the physical hardware pin (Replace with your actual PIC32 port read)
+    uint8_t CurrentButtonState = PORTBbits.RB9; 
+
+    // 2. Check if the state has changed since the last loop
+    if (CurrentButtonState != LastButtonState)
+    {
+        returnVal = true; // Tell the framework we found an event
+        ES_Event_t NewEvent;
+        
+        // 3. Determine if it was a press or release
+        if (CurrentButtonState == 0) // Button went LOW (pressed)
+        {
+            NewEvent.EventType = ES_CHOP; // need to update when full funcitonality finished
+        }
+        else // Button went HIGH (released)
+        {
+           
+        }
+        
+        NewEvent.EventParam = 0; // You could pass port data here if needed
+        
+        // 4. Post the event. You can post to a specific service, or broadcast it to all
+        ES_PostAll(NewEvent);
+    }
+    
+    // 5. Update the static variable for the next time the framework calls this function
+    LastButtonState = CurrentButtonState;
+    
+    return returnVal;
+}
+
+bool PotentiometerRead(void)
+{
+  bool returnVal = false;
+  uint32_t currentPotentiometer = ReadPotentiometer();
+  if (abs(currentPotentiometer - LastPotentiometerState) >= 50) // hysteresis
+  {
+    returnVal = true;
+    LastPotentiometerState = currentPotentiometer;
+    ES_Event_t newEvent;
+    newEvent.EventType = ES_POTENTIOMETER;
+    newEvent.EventParam = currentPotentiometer; // will be between 0 and 1023 for gnd to 3.3V
+    printf("Potentiometer Event Posted! Value: %u\r\n", currentPotentiometer);
+    ES_PostAll(newEvent);
+  }
+
+  return returnVal;
 }
 

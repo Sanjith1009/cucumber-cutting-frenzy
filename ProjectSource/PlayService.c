@@ -11,11 +11,16 @@
 
 #include "SetupService.h"
 #include "PlayService.h"
+#include "AudioService.h"
+
+// Hardware
+#include <xc.h>
+#include "PWM_PIC32.h"
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
 // Static variables to maintain state
-static bool isPlaying = false;
+static bool isPlaying = true;
 static bool highEnough = false;
 static uint16_t chopCounter = 0;
 static uint16_t treatCount = 0;
@@ -57,27 +62,27 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                     if (chopCounter < cutThreshold)
                     {
                         chopCounter++;
-                        DecreaseLitLEDs(); // LED buffer -1 lit LED
+                        //DecreaseLitLEDs(); // LED buffer -1 lit LED
                         
                         // Post chop audio cue to audio service
                         ES_Event_t AudioEvent;
                         AudioEvent.EventType = ES_AUDIO_CHOP;
                         AudioEvent.EventParam = 0;
-                        ES_PostToService(AUDIO_SERVICE_PRIORITY, AudioEvent);
+                        PostAudioService(AudioEvent);
                     }
                     else
                     {
                         chopCounter = 0;
                         treatCount++;
                         
-                        FlashAllLEDs();
-                        TurnOnAllLEDs();
+                        //FlashAllLEDs();
+                        //TurnOnAllLEDs();
                         
                         // Post finishedOne audio cue to audio service
                         ES_Event_t AudioEvent;
-                        AudioEvent.EventType = ES_PLAY_FINISHED_AUDIO;
+                        AudioEvent.EventType = ES_PLAY_FINISHED_AUDIO; //need to update when we update different audio cues
                         AudioEvent.EventParam = 0;
-                        ES_PostToService(AUDIO_SERVICE_PRIORITY, AudioEvent);
+                        PostAudioService(AudioEvent);
                     }
                     // Reset highEnough for the next chop
                     highEnough = false;
@@ -86,9 +91,9 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                 {
                     // Post womp womp audio cue to audio service
                     ES_Event_t AudioEvent;
-                    AudioEvent.EventType = ES_AUDIO_NOT_HIGH_ENOUGH;
-                    AudioEvent.EventParam = 0;
-                    ES_PostToService(AUDIO_SERVICE_PRIORITY, AudioEvent);
+                        AudioEvent.EventType = ES_AUDIO_CHOP; //ES_AUDIO_NOT_HIGH_ENOUGH need to update with actual audio cue
+                        AudioEvent.EventParam = 0;
+                        PostAudioService(AudioEvent);
                 }
             }
             break;
@@ -99,7 +104,7 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                 if (isPlaying == true)
                 {
                     isPlaying = false; // Exit play state
-                    FlashAllLEDs();
+                    //FlashAllLEDs();
                     
                     // Post TREAT counter to treat service
                     ES_Event_t TreatEvent;
@@ -121,11 +126,11 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                 }
             }
             break;
-        case ES_TREAT:
-            for (size_t i = 0; i < ThisEvent.EventParam; i++) {
-                MoveTreatServo();
-            }
-            break;
+        // case ES_DISPENSE_TREATS:
+        //     for (size_t i = 0; i < ThisEvent.EventParam; i++) {
+        //         MoveTreatServo();
+        //     }
+        //     break;
     }
     return ReturnEvent;
 }

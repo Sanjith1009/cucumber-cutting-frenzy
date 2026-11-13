@@ -5,7 +5,6 @@
 #include "terminal.h"
 #include "dbprintf.h"
 #include "../ProjectHeaders/LEDService.h"
-#include "../ProjectHeaders/DM_Display.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include "ShiftRegister.h"
@@ -48,52 +47,18 @@ bool InitLEDService(uint8_t Priority)
 
 ES_Event_t RunLEDService(ES_Event_t ThisEvent)
 {
-    // Framework requires returning ES_NO_EVENT to avoid crashing the event loop
     ES_Event_t ReturnEvent = {ES_NO_EVENT, 0};
-    
+
     switch (ThisEvent.EventType)
     {
         case ES_INIT:
-            if (DM_TakeInitDisplayStep() == false)
-            {
-                ES_PostToService(MyPriority, ThisEvent); 
-            }
+            // LED hardware is initialized in main.c
             break;
-        case ES_NEW_KEY:
-            DM_ScrollDisplayBuffer(4);
-            DM_AddChar2DisplayBuffer(ThisEvent.EventParam);
-            if (DM_TakeDisplayUpdateStep() == false) 
-            {
-                ES_Event_t UpdateStep;
-                UpdateStep.EventType = ES_Update_Step;
-                UpdateStep.EventParam = 0;
-                ES_PostToService(MyPriority, UpdateStep); 
-            } else {
-                ES_Event_t UpdateEvent;
-                UpdateEvent.EventType = ES_Update_Complete;
-                UpdateEvent.EventParam = 0;
-                ES_PostToService(MyPriority, UpdateEvent);
-            }
-            break;
-        case ES_Update_Step:
-            if (DM_TakeDisplayUpdateStep() == false) 
-            {
-                ES_PostToService(MyPriority, ThisEvent); 
-            } else {
-                ES_Event_t UpdateEvent;
-                UpdateEvent.EventType = ES_Update_Complete;
-                UpdateEvent.EventParam = 0;
-                ES_PostToService(MyPriority, UpdateEvent);
-            }
-            break;
-            
-            
-            
-        case ES_Update_Complete:
-            DB_printf("\rUpdate Complete, display HAL ready to update%d\r\n", MyPriority);
+
+        default:
             break;
     }
-    
+
     return ReturnEvent;
 }
 

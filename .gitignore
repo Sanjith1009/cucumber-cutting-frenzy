@@ -1,0 +1,22 @@
+# MPLAB X and CMake Build artifacts
+_build/
+build/
+cmake/
+dist/
+
+# VS Code and IDE settings
+.vscode/
+out/
+
+# MPLAB specific files
+nbproject/Makefile-*
+nbproject/Package-*
+nbproject/private/
+.generated_files/
+nbproject/
+Makefile*
+Package-*
+private/
+!cmake/**/user.cmake
+cmake/**/.generated/*
+cmake/**/CMake*

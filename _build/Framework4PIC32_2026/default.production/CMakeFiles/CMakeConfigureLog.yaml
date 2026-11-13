@@ -170,7 +170,7 @@ events:
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
       
       The C compiler identification is GNU, found in:
-        C:/Users/sanji/MPLABProjects/Me218aLab3Part4/_build/Framework4PIC32_2026/default.production/CMakeFiles/4.4.3/CompilerIdC/a.out
+        C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/4.4.3/CompilerIdC/a.out
       
   -
     kind: "find-v1"
@@ -2288,7 +2288,7 @@ events:
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
       
       The CXX compiler identification is GNU, found in:
-        C:/Users/sanji/MPLABProjects/Me218aLab3Part4/_build/Framework4PIC32_2026/default.production/CMakeFiles/4.4.3/CompilerIdCXX/a.out
+        C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/4.4.3/CompilerIdCXX/a.out
       
   -
     kind: "find-v1"

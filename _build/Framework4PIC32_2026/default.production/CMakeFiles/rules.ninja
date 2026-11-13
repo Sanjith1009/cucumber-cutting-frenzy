@@ -24,7 +24,7 @@ rule C_COMPILER__Framework4PIC32_2026_default_default_XC32_compile_unscanned_
 #############################################
 # Rule for linking C executable.
 
-rule C_EXECUTABLE_LINKER__Framework4PIC32_2026_default_image_wE7bqttB_
+rule C_EXECUTABLE_LINKER__Framework4PIC32_2026_default_image_xymPBhYZ_
   command = cmd.exe /C "$PRE_LINK && "c:\Program Files\Microchip\xc32\v6.00\bin\xc32-gcc.exe" $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD"
   description = Linking C executable $TARGET_FILE
   restat = $RESTAT
@@ -42,7 +42,7 @@ rule CUSTOM_COMMAND
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = C:\Users\sanji\.mplab\app-finder\apps\cmake\v4.4.3\cmake-4.4.3-windows-x86_64\bin\cmake.exe --regenerate-during-build -SC:\Users\sanji\MPLABProjects\Me218aLab3Part4\cmake\Framework4PIC32_2026\default.production -BC:\Users\sanji\MPLABProjects\Me218aLab3Part4\_build\Framework4PIC32_2026\default.production
+  command = C:\Users\sanji\.mplab\app-finder\apps\cmake\v4.4.3\cmake-4.4.3-windows-x86_64\bin\cmake.exe --regenerate-during-build -SC:\Users\sanji\MPLABProjects\ME218A_FINAL_PROJECT\cmake\Framework4PIC32_2026\default.production -BC:\Users\sanji\MPLABProjects\ME218A_FINAL_PROJECT\_build\Framework4PIC32_2026\default.production
   description = Re-running CMake...
   generator = 1
 

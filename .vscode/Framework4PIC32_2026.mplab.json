@@ -7,7 +7,7 @@
             "device": "PIC32MX170F256B",
             "imagePath": "./out/Framework4PIC32_2026/default.elf",
             "toolProperties": "default-tool-base",
-            "tool": "Snap",
+            "tool": "Simulator",
             "packs": [
                 {
                     "name": "PIC32MX_DFP",

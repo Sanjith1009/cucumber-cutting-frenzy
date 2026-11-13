@@ -27,14 +27,21 @@ set(Framework4PIC32_2026_default_default_XC32_FILE_TYPE_compile
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../FrameworkSource/circular_buffer_no_modulo_threadsafe.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../FrameworkSource/dbprintf.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../FrameworkSource/terminal.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/AudioService.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/DM_DisplayStarter.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/DeadmanHandling.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/EventCheckers.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/FontStuff.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/LEDService.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/MessageService.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PIC32_AD_Lib.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PIC32_SPI_HAL_Starter.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PWM_PIC32.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PlayService.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/Potentiometer.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/Service1.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/TestHarnessService0.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/ServoControl.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/SetupService.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/TREATService.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/main.c")
 set_source_files_properties(${Framework4PIC32_2026_default_default_XC32_FILE_TYPE_compile} PROPERTIES LANGUAGE C)
 set(Framework4PIC32_2026_default_default_XC32_FILE_TYPE_compile_cpp)
