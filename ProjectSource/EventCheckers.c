@@ -40,6 +40,7 @@
 // actual functionsdefinition
 #include "EventCheckers.h"
 #include "PIC32_AD_Lib.h"
+#include "Potentiometer.h"
 // This is the event checking function sample. It is not intended to be
 // included in the module. It is only here as a sample to guide you in writing
 // your own event checkers
@@ -159,8 +160,7 @@ bool Check4ChopButton(void)
 bool PotentiometerRead(void)
 {
   bool returnVal = false;
-  ADC_MultiRead(adcResults);
-  uint32_t currentPotentiometer = adcResults[0];
+  uint32_t currentPotentiometer = ReadPotentiometer();
   if (abs(currentPotentiometer - LastPotentiometerState) >= 50) // hysteresis
   {
     returnVal = true;

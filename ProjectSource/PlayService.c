@@ -20,7 +20,7 @@
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
 // Static variables to maintain state
-static bool isPlaying = false;
+static bool isPlaying = true;
 static bool highEnough = false;
 static uint16_t chopCounter = 0;
 static uint16_t treatCount = 0;

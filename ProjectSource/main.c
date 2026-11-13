@@ -20,6 +20,7 @@
 #include "PWM_PIC32.h"
 #include "AudioService.h"
 #include "PIC32_AD_Lib.h"
+#include "Potentiometer.h"
 
 static void blocking_tone(int pitch, int duration, int volume);
 
@@ -45,9 +46,7 @@ void main(void)
   TRISAbits.TRISA0 = 1;   // Set RA0 as input
   ANSELAbits.ANSA0 = 1;   // Enable analog mode on RA0 (disable digital buffer)
     
-  // 2. Configure the ADC using the HAL
-  // The function expects a bitmask where bit 0 selects AN0
-  ADC_ConfigAutoScan(1 << 0);
+  InitPotentiometer();
 
   // Force MAX7219 to clear its internal memory and shut off random LEDs
   DM_ClearDisplayBuffer();
@@ -59,12 +58,12 @@ void main(void)
   ErrorType = ES_Initialize(ES_Timer_RATE_1mS);
   if (ErrorType == Success)
   {
-    // ES_Event_t audioEvent = {ES_AUDIO_CHOP, 0};
+    ES_Event_t audioEvent = {ES_AUDIO_CHOP, 0};
 
-    // if (!PostAudioService(audioEvent))
-    // {
-    //     puts("Failed to post audio event");
-    // }
+    if (!PostAudioService(audioEvent))
+    {
+        puts("Failed to post audio event");
+    }
     ErrorType = ES_Run();
   }
   //if we got to here, there was an error
