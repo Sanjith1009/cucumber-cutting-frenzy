@@ -33,6 +33,7 @@ set(Framework4PIC32_2026_default_default_XC32_FILE_TYPE_compile
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/EventCheckers.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/FontStuff.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/LEDService.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PIC32_AD_Lib.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PIC32_SPI_HAL_Starter.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PWM_PIC32.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../ProjectSource/PlayService.c"

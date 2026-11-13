@@ -13,7 +13,8 @@
 #include "Potentiometer.h"
 #include "ServoControl.h"
 #include "LEDService.h"
-
+#include "PIC32_AD_Lib.h"
+#include "AudioService.h"
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
@@ -66,7 +67,16 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
                 
             // Set LED brightness PWM based on potentiometer
             // Assuming the potentiometer value is passed in the event parameter
-            SetLEDBrightness(ThisEvent.EventParam);
+            //SetLEDBrightness(ThisEvent.EventParam);
+
+            difficultyLED = ThisEvent.EventParam;
+            cutThreshold = CalculateDifficulty(ThisEvent.EventParam);
+
+            // for testing
+            
+            ES_Event_t testAudio;
+            testAudio.EventType = ES_AUDIO_CHOP;
+            PostAudioService(testAudio);
             break;
 
         case ES_HANDLE_TOUCH:

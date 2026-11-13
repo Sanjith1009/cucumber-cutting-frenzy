@@ -103,6 +103,12 @@
 },
 {
   "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",
+  "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\C_\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\PIC32_AD_Lib.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\PIC32_AD_Lib.c",
+  "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/PIC32_AD_Lib.c",
+  "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/PIC32_AD_Lib.c.o"
+},
+{
+  "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",
   "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\3f45066fbfb721999184b57a31303abd\\ProjectSource\\PIC32_SPI_HAL_Starter.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\PIC32_SPI_HAL_Starter.c",
   "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/PIC32_SPI_HAL_Starter.c",
   "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/3f45066fbfb721999184b57a31303abd/ProjectSource/PIC32_SPI_HAL_Starter.c.o"

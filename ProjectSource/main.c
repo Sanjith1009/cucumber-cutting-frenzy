@@ -19,6 +19,7 @@
 #include "../ProjectHeaders/PIC32_SPI_HAL.h"
 #include "PWM_PIC32.h"
 #include "AudioService.h"
+#include "PIC32_AD_Lib.h"
 
 static void blocking_tone(int pitch, int duration, int volume);
 
@@ -32,13 +33,21 @@ void main(void)
   SPISetup_BasicConfig(SPI_SPI1);
   SPISetup_SetLeader(SPI_SPI1, 0);
   SPISetup_SetBitTime(SPI_SPI1, 100); // 100ns = 10MHz clock
-  SPISetup_MapSSOutput(SPI_SPI1, SPI_RPA0);
-  SPISetup_MapSDOutput(SPI_SPI1, SPI_RPA1);
+  SPISetup_MapSSOutput(SPI_SPI1, SPI_RPA1);
+  SPISetup_MapSDOutput(SPI_SPI1, SPI_RPA2);
   SPISetup_SetClockIdleState(SPI_SPI1, 1);
   SPISetup_SetActiveEdge(SPI_SPI1, 0);
   SPISetup_SetXferWidth(SPI_SPI1, SPI_16BIT);
   SPISetEnhancedBuffer(SPI_SPI1, true);
   SPISetup_EnableSPI(SPI_SPI1);
+
+  // 1. Configure RA0 physical pin as an analog input
+  TRISAbits.TRISA0 = 1;   // Set RA0 as input
+  ANSELAbits.ANSA0 = 1;   // Enable analog mode on RA0 (disable digital buffer)
+    
+  // 2. Configure the ADC using the HAL
+  // The function expects a bitmask where bit 0 selects AN0
+  ADC_ConfigAutoScan(1 << 0);
 
   // Force MAX7219 to clear its internal memory and shut off random LEDs
   DM_ClearDisplayBuffer();
@@ -50,12 +59,12 @@ void main(void)
   ErrorType = ES_Initialize(ES_Timer_RATE_1mS);
   if (ErrorType == Success)
   {
-    ES_Event_t audioEvent = {ES_AUDIO_CHOP, 0};
+    // ES_Event_t audioEvent = {ES_AUDIO_CHOP, 0};
 
-    if (!PostAudioService(audioEvent))
-    {
-        puts("Failed to post audio event");
-    }
+    // if (!PostAudioService(audioEvent))
+    // {
+    //     puts("Failed to post audio event");
+    // }
     ErrorType = ES_Run();
   }
   //if we got to here, there was an error
