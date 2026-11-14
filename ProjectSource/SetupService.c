@@ -11,7 +11,7 @@
 
 #include "PlayService.h"
 #include "Potentiometer.h"
-#include "ServoControl.h"
+#include "../ProjectHeaders/ServoControl.h"
 #include "LEDService.h"
 #include "PIC32_AD_Lib.h"
 #include "AudioService.h"
@@ -25,7 +25,8 @@ static uint16_t cutThreshold = 0;
 static uint8_t difficultyLED = 0;
 
 void MoveTimerArmServo(uint8_t position);
-uint16_t CalculateDifficulty(uint16_t potValue);
+uint16_t CalculateDifficulty(uint16_t level);
+static uint8_t PotToDifficultyLevel(uint16_t potValue);
 
 bool InitSetupService(uint8_t Priority)
 {
@@ -44,11 +45,10 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
     
     switch (ThisEvent.EventType)
     {
-        case ES_START_BUTTON:
-        case ES_RESET:
+        case ES_INIT:
             chopCount = 0;
             treatCount = 0;            
-            MoveTimerArmServo(0);
+            MoveServo(2, 50);
                 
             // Post idle event to itself
             ES_Event_t IdleEvent;
@@ -58,24 +58,24 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
             break;
 
         case ES_IDLE:
-            SetLEDsPulsing();
+            //SetLEDsPulsing(); probably something with shift register
             break;
 
         case ES_POTENTIOMETER:
-            // Set selectTimer to 3 seconds (3000 ms)
-            ES_Timer_InitTimer(SELECT_TIMER, 3000);
                 
             // Set LED brightness PWM based on potentiometer
             // Assuming the potentiometer value is passed in the event parameter
             //SetLEDBrightness(ThisEvent.EventParam);
 
-            difficultyLED = ThisEvent.EventParam;
+            // EventParam is the difficulty level 1-5 (from PotentiometerRead)
+            difficultyLED = (uint8_t)ThisEvent.EventParam;
             cutThreshold = CalculateDifficulty(ThisEvent.EventParam);
 
             // for testing
             
             ES_Event_t testAudio;
             testAudio.EventType = ES_AUDIO_CHOP;
+            testAudio.EventParam = 0;   // tune 0 (must be a valid tune index)
             PostAudioService(testAudio);
             break;
 
@@ -87,40 +87,34 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
             ES_Event_t AudioEvent;
             AudioEvent.EventType = ES_AUDIO_321GO;
             AudioEvent.EventParam = 0;
-            ES_PostToService(AUDIO_SERVICE_PRIORITY, AudioEvent);
+            PostAudioService(AudioEvent);
             
             difficultyLED = 0;
-                
-            // Reset deadmanTimer
-            ES_Timer_InitTimer(DEADMAN_TIMER, 3000);
+            
             break;
 
         case ES_TIMEOUT:
-            // (idle state or selectTimer timeout)
-            if (ThisEvent.EventParam == SELECT_TIMER)
-            {
-                SetLEDsPulsing();
-            }
             
             // countdownTimer timeout (play start state)
-            else if (ThisEvent.EventParam == COUNTDOWN_TIMER)
+            if (ThisEvent.EventParam == COUNTDOWN_TIMER)
             {
-                // Set playTimer to 60 seconds (60000 ms)
-                ES_Timer_InitTimer(PLAY_TIMER, 60000);
+                // Set playTimer to the game length (PLAY_DURATION_MS in PlayService.h)
+                ES_Timer_InitTimer(PLAY_TIMER, PLAY_DURATION_MS);
                     
                 highEnough = false;
                     
                 // Threshold for number of cuts = read potentiometer and calculate 
                 uint16_t currentPotValue = ReadPotentiometer();
-                cutThreshold = CalculateDifficulty(currentPotValue);
+                cutThreshold = CalculateDifficulty(
+                    PotToDifficultyLevel(currentPotValue));
                     
                 // Move servo for timer arm to 0 position
-                MoveTimerArmServo(0);
+                MoveServo(2, 50);
                     
                 // Post play event to play service
                 ES_Event_t PlayEvent;
                 PlayEvent.EventType = ES_PLAY;
-                PlayEvent.EventParam = 0;
+                PlayEvent.EventParam = cutThreshold;
                 PostPlayService(PlayEvent);
             }
             break;
@@ -133,12 +127,25 @@ bool PostSetupService(ES_Event_t ThisEvent)
   return ES_PostToService(MyPriority, ThisEvent);
 }
 
-uint16_t CalculateDifficulty(uint16_t potValue)
+// Map difficulty level 1-5 to a cut threshold of 3-10 cuts
+// (level 1 -> 3, 2 -> 4, 3 -> 6, 4 -> 8, 5 -> 10)
+uint16_t CalculateDifficulty(uint16_t level)
 {
-    if (potValue > 1023)
+    if (level < 1u)
     {
-        potValue = 1023;
+        level = 1u;
+    }
+    else if (level > 5u)
+    {
+        level = 5u;
     }
 
-    return 3 + ((uint32_t)potValue * 7) / 1023;
+    return 3u + ((level - 1u) * 7u) / 4u;
+}
+
+// Convert raw pot reading (0-1023) to difficulty level 1-5.
+// Must match the formula in PotentiometerRead() in EventCheckers.c
+static uint8_t PotToDifficultyLevel(uint16_t potValue)
+{
+    return 1u + (uint8_t)(((uint32_t)potValue * 5u) / 1024u);
 }

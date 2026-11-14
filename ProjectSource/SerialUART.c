@@ -13,16 +13,19 @@ void SerialUART_Init(void)
 {
     // PPS mappings are configured in main.c
     // RB8 = UART2 RX, physical pin 17
-    // RB9 = UART2 TX, physical pin 18
+    // RA3 = UART2 TX, physical pin 10
+    // (RB9 is left alone - it is the chop button input)
 
     U2MODE = 0;
     U2STA = 0;
 
     // Configure digital UART pins
-    ANSELBCLR = (1u << 8) | (1u << 9);
+    ANSELBCLR = (1u << 8);
+    ANSELACLR = (1u << 3);
 
     TRISBSET = (1u << 8);  // RX input
-    TRISBCLR = (1u << 9);  // TX output
+    LATASET  = (1u << 3);  // idle TX high before enabling output
+    TRISACLR = (1u << 3);  // TX output
 
     // 9600 baud, 8N1
     // Assumes PBCLK = 20 MHz

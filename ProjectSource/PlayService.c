@@ -17,11 +17,24 @@
 // Hardware
 #include <xc.h>
 #include "PWM_PIC32.h"
+#include "ServoControl.h"
+
+// Timer-arm servo countdown (moved from GameFSM)
+#define ARM_START_POSITION 90u   // servo position at the start of the game
+#define ARM_END_POSITION   10u   // servo position when time is up
+#define ARM_UPDATE_MS      50u   // how often the arm is stepped
+
+static void StartTimerArm(void);
+static void UpdateTimerArm(void);
+static void StopTimerArm(void);
+
+static uint32_t armElapsedMs = 0;   // time since the game started
+static uint8_t  armPosition = ARM_END_POSITION;
 
 // Module-level variable to store the service priority
 static uint8_t MyPriority;
 // Static variables to maintain state
-static bool isPlaying = true;
+static bool isPlaying = false;
 static bool highEnough = false;
 static uint16_t chopCounter = 0;
 static uint16_t treatCount = 0;
@@ -46,6 +59,12 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
     {
         case ES_PLAY:
             isPlaying = true;
+            StartTimerArm();   // begin the timer-arm countdown sweep
+            break;
+
+        case ES_NOT_PLAYING:
+            isPlaying = false;
+            StopTimerArm();    // game aborted (e.g. deadman), park the arm
             break;
 
         case ES_BEAM_UNBROKEN:
@@ -92,16 +111,21 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                 {
                     // Post womp womp audio cue to audio service
                     ES_Event_t AudioEvent;
-                        AudioEvent.EventType = ES_AUDIO_CHOP; //ES_AUDIO_NOT_HIGH_ENOUGH need to update with actual audio cue
-                        AudioEvent.EventParam = 0;
-                        PostAudioService(AudioEvent);
+                    AudioEvent.EventType = ES_AUDIO_NOT_HIGH_ENOUGH;
+                    AudioEvent.EventParam = 0;
+                    PostAudioService(AudioEvent);
                 }
             }
             break;
 
         case ES_TIMEOUT:
-            if (ThisEvent.EventParam == PLAY_TIMER)
+            if (ThisEvent.EventParam == TIMER_ARM_TIMER)
             {
+                UpdateTimerArm();      // step the timer-arm servo
+            }
+            else if (ThisEvent.EventParam == PLAY_TIMER)
+            {
+                StopTimerArm();        // time's up, arm to end position
                 if (isPlaying == true)
                 {
                     isPlaying = false; // Exit play state
@@ -147,4 +171,55 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
 bool PostPlayService(ES_Event_t ThisEvent)
 {
   return ES_PostToService(MyPriority, ThisEvent);
+}
+
+/*--------------------------- Timer-Arm Servo ------------------------------*/
+// Start the countdown: arm to start position, begin stepping every 50 ms
+static void StartTimerArm(void)
+{
+    armElapsedMs = 0;
+    armPosition = ARM_START_POSITION;
+    MoveTimerArmServo(armPosition);
+    ES_Timer_InitTimer(TIMER_ARM_TIMER, ARM_UPDATE_MS);
+}
+
+// Called on each TIMER_ARM_TIMER timeout. Moves the arm linearly from
+// ARM_START_POSITION to ARM_END_POSITION over PLAY_DURATION_MS.
+static void UpdateTimerArm(void)
+{
+    if (!isPlaying)
+    {
+        return;   // stale tick after the game ended; don't restart
+    }
+
+    armElapsedMs += ARM_UPDATE_MS;
+    if (armElapsedMs > PLAY_DURATION_MS)
+    {
+        armElapsedMs = PLAY_DURATION_MS;
+    }
+
+    uint8_t newPosition = (uint8_t)(ARM_START_POSITION -
+        ((armElapsedMs * (ARM_START_POSITION - ARM_END_POSITION)) /
+         PLAY_DURATION_MS));
+
+    // Only command the servo when the position actually changes
+    if (newPosition != armPosition)
+    {
+        armPosition = newPosition;
+        MoveTimerArmServo(armPosition);
+    }
+
+    // Keep ticking until the arm reaches the end; PLAY_TIMER ends the game
+    if (armElapsedMs < PLAY_DURATION_MS)
+    {
+        ES_Timer_InitTimer(TIMER_ARM_TIMER, ARM_UPDATE_MS);
+    }
+}
+
+// Stop the countdown and park the arm at the end position
+static void StopTimerArm(void)
+{
+    ES_Timer_StopTimer(TIMER_ARM_TIMER);
+    armPosition = ARM_END_POSITION;
+    MoveTimerArmServo(armPosition);
 }

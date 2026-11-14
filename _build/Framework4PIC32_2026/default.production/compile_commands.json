@@ -97,6 +97,12 @@
 },
 {
   "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",
+  "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\C_\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\GameFSM.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\GameFSM.c",
+  "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/GameFSM.c",
+  "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/GameFSM.c.o"
+},
+{
+  "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",
   "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\C_\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\LEDService.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\LEDService.c",
   "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/LEDService.c",
   "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/LEDService.c.o"
@@ -133,6 +139,12 @@
 },
 {
   "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",
+  "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\C_\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\SerialUART.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\SerialUART.c",
+  "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/SerialUART.c",
+  "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/SerialUART.c.o"
+},
+{
+  "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",
   "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\C_\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\Service1.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\Service1.c",
   "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/Service1.c",
   "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/Service1.c.o"
@@ -148,6 +160,12 @@
   "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\C_\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\SetupService.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\SetupService.c",
   "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/SetupService.c",
   "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/SetupService.c.o"
+},
+{
+  "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",
+  "command": "\"c:\\Program Files\\Microchip\\xc32\\v6.00\\bin\\xc32-gcc.exe\" -DXPRJ_default=default -D__MPLAB_DEBUGGER_SNAP=1 -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/FrameworkSource -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectHeaders -Ic:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource -x c -fdiagnostics-color=always -g -x c -c -mprocessor=32MX170F256B -mdfp=C:/Users/sanji/.mchp_packs/Microchip/PIC32MX_DFP/1.7.380 -o CMakeFiles\\Framework4PIC32_2026_default_default_XC32_compile.dir\\C_\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\ShiftRegister.c.o -c C:\\Users\\sanji\\MPLABProjects\\ME218A_FINAL_PROJECT\\ProjectSource\\ShiftRegister.c",
+  "file": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/ShiftRegister.c",
+  "output": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/ShiftRegister.c.o"
 },
 {
   "directory": "C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production",

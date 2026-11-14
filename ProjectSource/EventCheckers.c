@@ -42,6 +42,7 @@
 #include "PIC32_AD_Lib.h"
 #include "Potentiometer.h"
 #include "LEDService.h"
+#include "SerialUART.h"
 // This is the event checking function sample. It is not intended to be
 // included in the module. It is only here as a sample to guide you in writing
 // your own event checkers
@@ -87,9 +88,28 @@ bool Check4Lock(void)
 }
 
 #endif
-static uint8_t LastButtonState = 1;
-uint32_t adcResults[1];
-static uint8_t LastPotentiometerState = 0;
+static uint32_t LastButtonState = 1;
+
+// Potentiometer difficulty selection (mirrors GameFSM's UpdateDifficulty)
+#define POT_CHECK_INTERVAL_MS 50u   // match GameFSM's 50 ms update rate
+#define NUM_DIFFICULTY_LEVELS 5u
+
+static uint8_t  LastDifficulty   = 0u;  // 0 = "no level yet", forces first post
+static uint16_t LastPotCheckTime = 0u;
+
+// Keyboard simulation of the handle limit switch: 'h' = touch, 'r' = release
+#define HANDLE_TOUCH_KEY   'h'
+#define HANDLE_RELEASE_KEY 'r'
+
+static bool KeyHandleHeld = false;   // simulated switch state
+
+// Handle limit switch (not wired yet). Change these to move it to another pin.
+// RB13 is currently unused in this project.
+#define LIMIT_SWITCH_PORT      PORTBbits.RB13
+#define LIMIT_SWITCH_TRIS      TRISBbits.TRISB13
+#define LIMIT_SWITCH_ANSEL     ANSELBbits.ANSB13
+#define LIMIT_SWITCH_PULLUP    CNPUBbits.CNPUB13
+#define LIMIT_SWITCH_SAMPLE_MS 10u   // debounce sample period
 /****************************************************************************
  Function
    Check4Keystroke
@@ -112,15 +132,99 @@ static uint8_t LastPotentiometerState = 0;
 ****************************************************************************/
 bool Check4Keystroke(void)
 {
-  if (IsNewKeyReady())   // new key waiting?
+  // Read keys from UART2 (SerialUART: RX on RB8, 9600 baud), the same
+  // nonblocking read the GameFSM test loop used.
+  char key;
+  if (SerialUART_ReadChar(&key))   // new key waiting?
   {
     ES_Event_t ThisEvent;
-    ThisEvent.EventType   = ES_NEW_KEY;
-    ThisEvent.EventParam  = GetNewKey();
+    ThisEvent.EventParam = 0;
+
+    if (key == HANDLE_TOUCH_KEY)
+    {
+      if (KeyHandleHeld) { return false; }   // already touched, ignore repeats
+      KeyHandleHeld = true;
+      ThisEvent.EventType = ES_HANDLE_TOUCH;
+      SerialUART_WriteString("Handle TOUCH (key)\r\n");
+    }
+    else if (key == HANDLE_RELEASE_KEY)
+    {
+      if (!KeyHandleHeld) { return false; }  // already released, ignore
+      KeyHandleHeld = false;
+      ThisEvent.EventType = ES_HANDLE_RELEASE;
+      SerialUART_WriteString("Handle RELEASE (key)\r\n");
+    }
+    else
+    {
+      ThisEvent.EventType  = ES_NEW_KEY;     // all other keys unchanged
+      ThisEvent.EventParam = key;
+    }
+
     ES_PostAll(ThisEvent);
     return true;
   }
   return false;
+}
+
+/****************************************************************************
+ Function
+   Check4LimitSwitch
+ Description
+   Hardware version of the 'h'/'r' handle keys. Posts ES_HANDLE_TOUCH when
+   the limit switch closes and ES_HANDLE_RELEASE when it opens.
+ Notes
+   Wiring: switch between LIMIT_SWITCH pin and GND (active low). The internal
+   pull-up holds the pin high while the switch is open or not wired yet, so
+   this checker posts nothing until a switch is connected and pressed.
+   Sampled every LIMIT_SWITCH_SAMPLE_MS to debounce mechanical bounce.
+****************************************************************************/
+bool Check4LimitSwitch(void)
+{
+  static bool     Initialized     = false;
+  static uint8_t  LastSwitchState = 1u;   // 1 = open (released)
+  static uint16_t LastSampleTime  = 0u;
+
+  // One-time pin setup on first call: digital input with pull-up
+  if (!Initialized)
+  {
+    LIMIT_SWITCH_ANSEL = 0;
+    LIMIT_SWITCH_TRIS  = 1;
+    LIMIT_SWITCH_PULLUP = 1;
+    LastSwitchState = LIMIT_SWITCH_PORT;  // start from current state, no false edge
+    LastSampleTime  = ES_Timer_GetTime();
+    Initialized = true;
+    return false;
+  }
+
+  // Debounce: only sample every LIMIT_SWITCH_SAMPLE_MS
+  uint16_t now = ES_Timer_GetTime();
+  if ((uint16_t)(now - LastSampleTime) < LIMIT_SWITCH_SAMPLE_MS)
+  {
+    return false;
+  }
+  LastSampleTime = now;
+
+  uint8_t CurrentSwitchState = LIMIT_SWITCH_PORT;
+  if (CurrentSwitchState == LastSwitchState)
+  {
+    return false;
+  }
+  LastSwitchState = CurrentSwitchState;
+
+  ES_Event_t ThisEvent;
+  ThisEvent.EventParam = 0;
+  if (CurrentSwitchState == 0u)            // went LOW: switch closed
+  {
+    ThisEvent.EventType = ES_HANDLE_TOUCH;
+    printf("Handle TOUCH (switch)\r\n");
+  }
+  else                                     // went HIGH: switch opened
+  {
+    ThisEvent.EventType = ES_HANDLE_RELEASE;
+    printf("Handle RELEASE (switch)\r\n");
+  }
+  ES_PostAll(ThisEvent);
+  return true;
 }
 
 bool Check4ChopButton(void)
@@ -140,16 +244,17 @@ bool Check4ChopButton(void)
         if (CurrentButtonState == 0) // Button went LOW (pressed)
         {
             NewEvent.EventType = ES_CHOP; // need to update when full funcitonality finished
+            NewEvent.EventParam = 0; // You could pass port data here if needed
+        
+            // 4. Post the event. You can post to a specific service, or broadcast it to all
+            ES_PostAll(NewEvent);
         }
         else // Button went HIGH (released)
         {
            
         }
         
-        NewEvent.EventParam = 0; // You could pass port data here if needed
         
-        // 4. Post the event. You can post to a specific service, or broadcast it to all
-        ES_PostAll(NewEvent);
     }
     
     // 5. Update the static variable for the next time the framework calls this function
@@ -161,16 +266,32 @@ bool Check4ChopButton(void)
 bool PotentiometerRead(void)
 {
   bool returnVal = false;
-  uint32_t currentPotentiometer = ReadPotentiometer();
-  if (abs(currentPotentiometer - LastPotentiometerState) >= 50) // hysteresis
+  uint16_t now = ES_Timer_GetTime();
+
+  // 1. Only sample every 50 ms (unsigned subtraction handles timer rollover)
+  if ((uint16_t)(now - LastPotCheckTime) < POT_CHECK_INTERVAL_MS)
   {
-    returnVal = true;
-    LastPotentiometerState = currentPotentiometer;
+    return false;
+  }
+  LastPotCheckTime = now;
+
+  // 2. Read pot (0-1023) and convert to difficulty level 1-5 (same as GameFSM)
+  uint16_t potValue = ReadPotentiometer();
+  uint8_t  newDifficulty =
+      1u + (uint8_t)(((uint32_t)potValue * NUM_DIFFICULTY_LEVELS) / 1024u);
+
+  // 3. Post only when the difficulty level changes
+  if (newDifficulty != LastDifficulty)
+  {
+    LastDifficulty = newDifficulty;
+
     ES_Event_t newEvent;
-    newEvent.EventType = ES_POTENTIOMETER;
-    newEvent.EventParam = currentPotentiometer; // will be between 0 and 1023 for gnd to 3.3V
-    printf("Potentiometer Event Posted! Value: %u\r\n", currentPotentiometer);
-    ES_PostAll(newEvent);
+    newEvent.EventType  = ES_POTENTIOMETER;
+    newEvent.EventParam = newDifficulty;   // difficulty level 1-5
+    printf("Pot ADC: %u | Difficulty: %u / %u\r\n",
+           potValue, newDifficulty, NUM_DIFFICULTY_LEVELS);
+    PostSetupService(newEvent);
+    returnVal = true;
   }
 
   return returnVal;

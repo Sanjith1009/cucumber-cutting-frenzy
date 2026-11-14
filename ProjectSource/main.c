@@ -2,6 +2,8 @@
 #include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <assert.h>
 
 #include "ES_Configure.h"
 #include "ES_Framework.h"
@@ -12,6 +14,11 @@
 #include "../ProjectHeaders/Potentiometer.h"
 #include "../ProjectHeaders/SerialUART.h"
 #include "../ProjectHeaders/GameFSM.h"
+#include "../ProjectHeaders/PIC32_SPI_HAL.h"
+
+#include "PWM_PIC32.h"
+#include "AudioService.h"
+#include "PIC32_AD_Lib.h"
 
 // ========================================
 // PERIPHERAL PIN MAPPING
@@ -34,9 +41,9 @@ static void ConfigurePinMappings(void)
 
     // UART2
     // RX: RB8, physical pin 17
-    // TX: RB9, physical pin 18
+    // TX: RA3, physical pin 10 (moved off RB9, which is the chop button)
     U2RXR = 0b0100;
-    RPB9R = 0b0010;
+    RPA3R = 0b0010;
 
     // Servo outputs
     // OC1: RB3, physical pin 7
@@ -59,6 +66,8 @@ static void ConfigurePinMappings(void)
 
 int main(void)
 {
+    ES_Return_t ErrorType = Success;
+
     // Initialize PIC32
     _HW_PIC32Init();
 
@@ -74,21 +83,46 @@ int main(void)
     // Keep treat servo stationary
     MoveServo(2, 50);
 
-    // Initialize game state machine
-    GameFSM_Init();
-
-    // Main checkpoint test loop
-    while (1)
+    // now initialize the Events and Services Framework and start it running
+    ErrorType = ES_Initialize(ES_Timer_RATE_1mS);
+    if (ErrorType == Success)
     {
-        char received;
-
-        // Read all available serial characters
-        while (SerialUART_ReadChar(&received))
+        ErrorType = ES_Run();
+    }
+    //if we got to here, there was an error
+    switch (ErrorType)
+    {
+        case FailedPost:
         {
-            GameFSM_HandleKey(received);
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedPost == ErrorType );
+        //DB_printf("Failed on attempt to Post\n");
         }
-
-        // Update game state
-        GameFSM_Update(_CP0_GET_COUNT());
+        break;
+        case FailedPointer:
+        {
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedPointer  == ErrorType );
+    //      DB_printf("Failed on NULL pointer\n");
+        }
+        break;
+        case FailedInit:
+        {
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedInit  == ErrorType );
+    //      DB_printf("Failed Initialization\n");
+        }
+        break;
+        default:
+        {
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedOther  == ErrorType );
+    //      DB_printf("Other Failure\n");
+        }
+        break;
+    }
+    for ( ; ;)
+    {
+        ;
     }
 }

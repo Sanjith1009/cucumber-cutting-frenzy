@@ -33,7 +33,10 @@ void InitServoControl(void)
 {
     ServoInitialized = false;
 
-    if (!PWMSetup_BasicConfig(NUM_SERVOS))
+    // Configure 4 PWM channels: OC1/OC2 for the servos (Timer2, 50 Hz) and
+    // OC4 for the buzzer (Timer3, set up in AudioService). This is the ONLY
+    // place BasicConfig should be called - calling it again resets all channels.
+    if (!PWMSetup_BasicConfig(4))
     {
         return;
     }

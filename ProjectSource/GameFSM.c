@@ -64,9 +64,6 @@ static void EnterWelcome(void)
         "WELCOME TO CUCUMBER CUTTING FRENZY!\r\n");
     SerialUART_WriteString(
         "============================\r\n");
-
-    SerialUART_WriteString(
-        "Press 's' to start setup.\r\n");
 }
 
 // Convert potentiometer reading to difficulty 1-5

@@ -276,6 +276,7 @@ typedef enum
   ES_BEAM_UNBROKEN,
   ES_CHOP,
   ES_TREAT,
+  ES_NOT_PLAYING,
 
   // LED events
   ES_Update_Step,
@@ -289,8 +290,6 @@ typedef enum
   ES_AUDIO_ENDGAME,
 
   // Other things not mentioned yet
-  ES_HANDLE_TOUCHED,
-  ES_HANDLE_RELEASED,
   ES_DISPENSE_TREATS,
   ES_PLAY_FINISHED_AUDIO,
   ES_NEW_EVENT1,
@@ -329,7 +328,7 @@ typedef enum
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke, Check4ChopButton, PotentiometerRead, CheckLEDAnimation
+#define EVENT_CHECK_LIST Check4Keystroke, Check4LimitSwitch, Check4ChopButton, PotentiometerRead, CheckLEDAnimation
 
 /****************************************************************************/
 // These are the definitions for the post functions to be executed when the
@@ -349,7 +348,7 @@ typedef enum
 #define TIMER8_RESP_FUNC TIMER_UNUSED
 #define TIMER9_RESP_FUNC TIMER_UNUSED
 #define TIMER10_RESP_FUNC TIMER_UNUSED
-#define TIMER11_RESP_FUNC TIMER_UNUSED
+#define TIMER11_RESP_FUNC PostPlayService
 #define TIMER12_RESP_FUNC PostSetupService
 #define TIMER13_RESP_FUNC PostSetupService
 #define TIMER14_RESP_FUNC PostPlayService
@@ -366,6 +365,7 @@ typedef enum
 #define PLAY_TIMER 14
 #define SELECT_TIMER 13
 #define COUNTDOWN_TIMER 12
+#define TIMER_ARM_TIMER 11
 #define AUDIO_TIMER 2
 
 #endif /* ES_CONFIGURE_H */

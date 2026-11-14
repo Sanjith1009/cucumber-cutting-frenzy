@@ -8,7 +8,9 @@
 #include "../ProjectHeaders/DM_Display.h"
 #include <stdio.h>
 #include <stdbool.h>
-
+#include "../ProjectHeaders/SetupService.h"
+#include "../ProjectHeaders/AudioService.h"
+#include "../ProjectHeaders/PlayService.h"
 #include "SetupService.h"
 
 
@@ -35,11 +37,11 @@ ES_Event_t RunDeadmanHandling(ES_Event_t ThisEvent)
     
     switch (ThisEvent.EventType)
     {
-        case ES_HANDLE_TOUCHED:
+        case ES_HANDLE_TOUCH:
             IsHandleTouched = true;
             break;
 
-        case ES_HANDLE_RELEASED:
+        case ES_HANDLE_RELEASE:
             if (IsHandleTouched == true)
             {
                 // Set deadmanTimer
@@ -62,13 +64,18 @@ ES_Event_t RunDeadmanHandling(ES_Event_t ThisEvent)
                     ES_Event_t AudioEvent;
                     AudioEvent.EventType = ES_AUDIO_HANDLE_RELEASE_IDLE; 
                     AudioEvent.EventParam = 0;
-                    ES_PostToService(AUDIO_SERVICE_PRIORITY, AudioEvent);
+                    PostAudioService(AudioEvent);
 
                     // Post reset event to SetupService
                     ES_Event_t ResetEvent;
                     ResetEvent.EventType = ES_RESET;
                     ResetEvent.EventParam = 0;
                     PostSetupService(ResetEvent);
+
+                    ES_Event_t notPlayingEvent;
+                    notPlayingEvent.EventType = ES_NOT_PLAYING;
+                    notPlayingEvent.EventParam = 0;
+                    PostPlayService(notPlayingEvent);
                 }
             }
             break;
