@@ -18,6 +18,7 @@
 #include <xc.h>
 #include "PWM_PIC32.h"
 #include "ServoControl.h"
+#include "EventCheckers.h"   // IsBeamUnbroken()
 
 // Timer-arm servo countdown (moved from GameFSM)
 #define ARM_START_POSITION 90u   // servo position at the start of the game
@@ -35,7 +36,7 @@ static uint8_t  armPosition = ARM_END_POSITION;
 static uint8_t MyPriority;
 // Static variables to maintain state
 static bool isPlaying = false;
-static bool highEnough = false;
+static bool highEnough = true;
 static uint16_t chopCounter = 0;
 static uint16_t treatCount = 0;
 static uint16_t cutThreshold = 5; // placeholder

@@ -328,7 +328,7 @@ typedef enum
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke, Check4LimitSwitch, Check4ChopButton, PotentiometerRead, CheckLEDAnimation
+#define EVENT_CHECK_LIST Check4Keystroke, Check4LimitSwitch, Check4ChopButton, PotentiometerRead, CheckLEDAnimation, Check4BeamUnbroken
 
 /****************************************************************************/
 // These are the definitions for the post functions to be executed when the

@@ -26,5 +26,9 @@ bool Check4LimitSwitch(void);
 bool Check4ChopButton(void);
 bool PotentiometerRead(void);
 bool CheckLEDAnimation(void);
+bool Check4BeamUnbroken(void);
+
+// Direct read of the break-beam: true if the beam is currently NOT broken
+bool IsBeamUnbroken(void);
 
 #endif /* EventCheckers_H */

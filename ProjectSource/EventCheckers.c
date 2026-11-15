@@ -110,6 +110,15 @@ static bool KeyHandleHeld = false;   // simulated switch state
 #define LIMIT_SWITCH_ANSEL     ANSELBbits.ANSB13
 #define LIMIT_SWITCH_PULLUP    CNPUBbits.CNPUB13
 #define LIMIT_SWITCH_SAMPLE_MS 10u   // debounce sample period
+
+// Break-beam sensor on RB10 (physical pin 21). External pull-up is wired,
+// so the internal pull-up is not used. With an open-collector receiver the
+// pin reads HIGH when the beam is NOT broken; flip BEAM_UNBROKEN_LEVEL if
+// your sensor is the opposite.
+#define BEAM_PORT           PORTBbits.RB10
+#define BEAM_TRIS           TRISBbits.TRISB10
+#define BEAM_UNBROKEN_LEVEL 1u
+#define BEAM_SAMPLE_MS      10u   // sample period, filters edge flicker
 /****************************************************************************
  Function
    Check4Keystroke
@@ -301,4 +310,70 @@ bool CheckLEDAnimation(void)
 {
   LEDService_Update();
   return false; // This function doesn't generate events, it just updates the LED service
+}
+
+/****************************************************************************
+ Function
+   Check4BeamUnbroken
+ Description
+   Posts ES_BEAM_UNBROKEN to PlayService when the break-beam on RB10 changes
+   from broken to unbroken (knife raised high enough). No event is posted
+   when the beam becomes broken, but that state is still recorded so the
+   next unbroken transition is detected.
+****************************************************************************/
+bool Check4BeamUnbroken(void)
+{
+  static bool     Initialized    = false;
+  static uint8_t  LastBeamState  = 0u;
+  static uint16_t LastSampleTime = 0u;
+
+  // One-time pin setup on first call: digital input (RB10 has no analog mode)
+  if (!Initialized)
+  {
+    BEAM_TRIS = 1;
+    LastBeamState  = BEAM_PORT;   // start from current state, no false edge
+    LastSampleTime = ES_Timer_GetTime();
+    Initialized = true;
+    return false;
+  }
+
+  // Only sample every BEAM_SAMPLE_MS
+  uint16_t now = ES_Timer_GetTime();
+  if ((uint16_t)(now - LastSampleTime) < BEAM_SAMPLE_MS)
+  {
+    return false;
+  }
+  LastSampleTime = now;
+
+  uint8_t CurrentBeamState = BEAM_PORT;
+  bool returnVal = false;
+
+  // Post only on the change from broken -> unbroken
+  if ((CurrentBeamState != LastBeamState) &&
+      (CurrentBeamState == BEAM_UNBROKEN_LEVEL))
+  {
+    ES_Event_t ThisEvent;
+    ThisEvent.EventType  = ES_BEAM_UNBROKEN;
+    ThisEvent.EventParam = 0;
+    SerialUART_WriteString("Beam UNBROKEN\r\n");
+    PostPlayService(ThisEvent);
+    returnVal = true;
+  }
+
+  // Record every sample (including broken) so the next change is detected
+  LastBeamState = CurrentBeamState;
+
+  return returnVal;
+}
+
+/****************************************************************************
+ Function
+   IsBeamUnbroken
+ Description
+   Direct read of the break-beam: true if the beam is currently NOT broken.
+   Used by PlayService at the start of a game.
+****************************************************************************/
+bool IsBeamUnbroken(void)
+{
+  return (BEAM_PORT == BEAM_UNBROKEN_LEVEL);
 }
