@@ -12,20 +12,31 @@
 void SerialUART_Init(void)
 {
     // PPS mappings are configured in main.c
-    // RB8 = UART2 RX, physical pin 17
-    // RB9 = UART2 TX, physical pin 18
+    //
+    // UART2 RX: RB8, physical pin 17
+    // UART2 TX: RA3, physical pin 10
+    //
+    // RB9, physical pin 18, is reserved
+    // for the knife/chop button.
 
     U2MODE = 0;
     U2STA = 0;
 
-    // Configure digital UART pins
-    ANSELBCLR = (1u << 8) | (1u << 9);
+    // Configure UART RX as digital input
+    ANSELBCLR = (1u << 8);
+    TRISBSET = (1u << 8);
 
-    TRISBSET = (1u << 8);  // RX input
-    TRISBCLR = (1u << 9);  // TX output
+    // Configure UART TX as digital output
+    ANSELACLR = (1u << 3);
+    TRISACLR = (1u << 3);
 
-    // 9600 baud, 8N1
-    // Assumes PBCLK = 20 MHz
+    // Do NOT configure RB9 as a UART pin.
+    // Check4ChopButton() handles its GPIO setup.
+
+    // 9600 baud, 8 data bits, no parity,
+    // 1 stop bit.
+    // Assumes PBCLK = 20 MHz.
+
     U2MODEbits.BRGH = 0;
     U2MODEbits.PDSEL = 0;
     U2MODEbits.STSEL = 0;
@@ -102,7 +113,6 @@ bool SerialUART_ReadChar(char *received)
         return false;
     }
 
-    // Read received character
     *received = (char)U2RXREG;
 
     return true;
