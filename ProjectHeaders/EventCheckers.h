@@ -10,6 +10,7 @@ bool Check4ChopButton(void);
 bool PotentiometerRead(void);
 bool CheckLEDAnimation(void);
 bool Check4BeamUnbroken(void);
+bool Check4CapacitiveHandle(void);
 
 // Direct sensor read used by PlayService when ES_PLAY begins.
 bool IsBeamUnbroken(void);

@@ -12,6 +12,7 @@
 #include "Potentiometer.h"
 #include "LEDService.h"
 #include "SerialUART.h"
+#include "KnifeCapSensor.h"
 
 // PIC32MX170F256B:
 // RB9 pin 18: knife/chop button, active LOW. DO NOT map UART2 TX here.
@@ -20,6 +21,8 @@
 // RB13 pin 24: Sanjith's proposed handle switch; may conflict with
 //              your break-beam emitter control. Disabled until resolved.
 #define ENABLE_PHYSICAL_HANDLE_SWITCH 0
+// Disable h/r simulation while the physical capacitive handle is active.
+#define ENABLE_SERIAL_HANDLE_SIMULATION 0
 
 #define POT_CHECK_INTERVAL_MS 50u
 #define NUM_DIFFICULTY_LEVELS 5u
@@ -67,13 +70,13 @@ bool Check4Keystroke(void)
         return false;
     }
 
-    if (key == 'h')
+    if (key == 'h' || key == 'r')
     {
-        return PostHandleState(true);
-    }
-    if (key == 'r')
-    {
-        return PostHandleState(false);
+#if ENABLE_SERIAL_HANDLE_SIMULATION
+        return PostHandleState(key == 'h');
+#else
+        return false;  // Physical sensing owns the handle state.
+#endif
     }
 
     if (key == '\r' || key == '\n')
@@ -247,4 +250,67 @@ bool Check4BeamUnbroken(void)
 bool IsBeamUnbroken(void)
 {
     return (PORTBbits.RB10 == BEAM_UNBROKEN_LEVEL);
+}
+
+// Capacitive knife handle: physical events with diagnostic UART output.
+// This checker is called by ES_Framework; it never delays for 30 readings.
+static void PrintSignedDelta(int32_t delta)
+{
+    if (delta < 0)
+    {
+        SerialUART_WriteChar('-');
+        SerialUART_WriteUInt((uint32_t)(-delta));
+    }
+    else
+    {
+        SerialUART_WriteUInt((uint32_t)delta);
+    }
+}
+
+bool Check4CapacitiveHandle(void)
+{
+    static bool calibrationAnnounced = false;
+    static uint8_t windowsSinceReport = 0u;
+    KnifeCapSensor_Reading_t reading;
+
+    if (!KnifeCapSensor_Poll(ES_Timer_GetTime(), &reading))
+    {
+        return false;
+    }
+
+    if (!reading.calibrated)
+    {
+        return false;
+    }
+
+    if (!calibrationAnnounced)
+    {
+        calibrationAnnounced = true;
+        SerialUART_WriteString("KNIFE HANDLE CALIBRATED: baseline=");
+        SerialUART_WriteUInt(reading.baseline);
+        SerialUART_WriteString("\r\n");
+    }
+
+    // Diagnostics around every 300 ms, plus every state transition.
+    ++windowsSinceReport;
+    if (windowsSinceReport >= 5u || reading.stateChanged)
+    {
+        windowsSinceReport = 0u;
+        SerialUART_WriteString("Knife mean: ");
+        SerialUART_WriteUInt(reading.mean);
+        SerialUART_WriteString(" | var: ");
+        SerialUART_WriteUInt(reading.variance);
+        SerialUART_WriteString(" | delta: ");
+        PrintSignedDelta(reading.delta);
+        SerialUART_WriteString(" | ");
+        SerialUART_WriteString(reading.held ? "HELD" : "RELEASED");
+        SerialUART_WriteString("\r\n");
+    }
+
+    // This also retries if posting failed on the prior completed window.
+    if (reading.held != HandleTouched)
+    {
+        return PostHandleState(reading.held);
+    }
+    return false;
 }

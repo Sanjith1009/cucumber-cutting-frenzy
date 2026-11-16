@@ -276,6 +276,7 @@ typedef enum
   ES_BEAM_UNBROKEN,
   ES_CHOP,
   ES_TREAT,
+  ES_NOT_PLAYING,
 
   // LED events
   ES_Update_Step,
@@ -329,7 +330,7 @@ typedef enum
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke, Check4LimitSwitch, Check4ChopButton, PotentiometerRead, CheckLEDAnimation, Check4BeamUnbroken
+#define EVENT_CHECK_LIST Check4Keystroke, Check4LimitSwitch, Check4ChopButton, PotentiometerRead, CheckLEDAnimation, Check4BeamUnbroken, Check4CapacitiveHandle
 
 /****************************************************************************/
 // These are the definitions for the post functions to be executed when the

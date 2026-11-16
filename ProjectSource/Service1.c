@@ -3,6 +3,7 @@
 #include "../ProjectHeaders/Service1.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include "dbprintf.h"
 
 static uint8_t MyPriority;
 
