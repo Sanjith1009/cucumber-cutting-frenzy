@@ -1,130 +1,117 @@
+#include <xc.h>
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "ES_Configure.h"
 #include "ES_Framework.h"
-#include "ES_DeferRecall.h"
-#include "ES_Port.h"
-#include "terminal.h"
-#include "dbprintf.h"
-#include "../ProjectHeaders/LEDService.h"
-#include <stdio.h>
-#include <stdbool.h>
+#include "LEDService.h"
 #include "ShiftRegister.h"
-#include <xc.h>
 
+#define NUM_GAME_LEDS       6u
+#define ALL_LEDS_MASK      0x3Fu
 
-// Module-level variable to store the service priority
+// CP0 increments at SYSCLK / 2. These constants assume 40 MHz SYSCLK.
+#define CP0_TICKS_PER_MS     20000u
+#define FLASH_INTERVAL_TICKS (250u * CP0_TICKS_PER_MS)
+
 static uint8_t MyPriority;
-
-#define NUM_GAME_LEDS 6u
-#define ALL_LEDS_MASK 0x3Fu
-
-// At 40 MHz SYSCLK, CP0 counts at 20 MHz.
-// 5,000,000 ticks = 250 ms.
-#define FLASH_INTERVAL_TICKS 5000000u
-
 static uint8_t LitLEDCount = 0u;
 static bool LEDsFlashing = false;
 static bool FlashState = false;
 static uint32_t LastFlashTime = 0u;
+static uint32_t FlashStartTime = 0u;
+static uint32_t FlashDurationTicks = 0u;  // 0 = keep flashing
 
-// Update the six LEDs according to LitLEDCount
 static void UpdateLEDOutputs(void)
 {
-    uint8_t pattern =
-        (uint8_t)((1u << LitLEDCount) - 1u);
-
+    // Counts 0..6 become masks 0x00,0x01,0x03,...,0x3F.
+    uint8_t pattern = (uint8_t)((1u << LitLEDCount) - 1u);
     WriteShiftRegister(pattern);
 }
 
-bool InitLEDService(uint8_t Priority)
+void LEDService_SetLitCount(uint8_t count)
 {
-    ES_Event_t ThisEvent;
-    MyPriority = Priority;
-    ThisEvent.EventType = ES_INIT;
-    ThisEvent.EventParam = 0;
-    
-    return ES_PostToService(MyPriority, ThisEvent);
-}
-
-ES_Event_t RunLEDService(ES_Event_t ThisEvent)
-{
-    ES_Event_t ReturnEvent = {ES_NO_EVENT, 0};
-
-    switch (ThisEvent.EventType)
+    if (count > NUM_GAME_LEDS)
     {
-        case ES_INIT:
-            // LED hardware is initialized in main.c
-            break;
-
-        default:
-            break;
+        count = NUM_GAME_LEDS;
     }
 
-    return ReturnEvent;
+    LEDsFlashing = false;
+    LitLEDCount = count;
+    UpdateLEDOutputs();
 }
 
-bool PostLEDService(ES_Event_t ThisEvent)
+void LEDService_ShowCutProgress(uint16_t completedCuts,
+                                uint16_t requiredCuts)
 {
-  return ES_PostToService(MyPriority, ThisEvent);
-}
+    if (requiredCuts == 0u)
+    {
+        LEDService_SetLitCount(0u);
+        return;
+    }
 
+    if (completedCuts > requiredCuts)
+    {
+        completedCuts = requiredCuts;
+    }
+
+    uint32_t remainingCuts = (uint32_t)(requiredCuts - completedCuts);
+
+    // Scale remaining chops to six LEDs, rounding UP.
+    // With 8 required cuts: 0=>6 LEDs, 2=>5, 4=>3, 6=>2, 8=>0.
+    uint8_t litCount = (uint8_t)(
+        (remainingCuts * NUM_GAME_LEDS + requiredCuts - 1u)
+        / requiredCuts);
+
+    LEDService_SetLitCount(litCount);
+}
 
 void TurnOnAllLEDs(void)
 {
-    // Stop any flashing animation
-    LEDsFlashing = false;
-
-    // Illuminate all six LEDs
-    LitLEDCount = NUM_GAME_LEDS;
-
-    UpdateLEDOutputs();
+    LEDService_SetLitCount(NUM_GAME_LEDS);
 }
-
 
 void DecreaseLitLEDs(void)
 {
-    // Stop flashing before changing LED count
-    LEDsFlashing = false;
-
-    // Decrease the number of illuminated LEDs
     if (LitLEDCount > 0u)
     {
-        LitLEDCount--;
+        LEDService_SetLitCount((uint8_t)(LitLEDCount - 1u));
     }
-
-    UpdateLEDOutputs();
+    else
+    {
+        LEDService_SetLitCount(0u);
+    }
 }
 
+static void StartFlashing(uint32_t durationTicks)
+{
+    LEDsFlashing = true;
+    FlashState = true;
+    FlashStartTime = _CP0_GET_COUNT();
+    LastFlashTime = FlashStartTime;
+    FlashDurationTicks = durationTicks;
+    WriteShiftRegister(ALL_LEDS_MASK);
+}
 
 void FlashAllLEDs(void)
 {
-    // Don't restart the timing if already flashing
-    if (LEDsFlashing)
+    // Preserve the original behavior: indefinite until another LED command.
+    if (!LEDsFlashing)
+    {
+        StartFlashing(0u);
+    }
+}
+
+void LEDService_FlashForMs(uint16_t durationMs)
+{
+    if (durationMs == 0u)
     {
         return;
     }
 
-    LEDsFlashing = true;
-    FlashState = true;
-
-    // Record when flashing started
-    LastFlashTime = _CP0_GET_COUNT();
-
-    // Begin with all six LEDs illuminated
-    WriteShiftRegister(ALL_LEDS_MASK);
+    // Saved LitLEDCount will be restored when the flash expires.
+    StartFlashing((uint32_t)durationMs * CP0_TICKS_PER_MS);
 }
-
-
-void SetLEDsPulsing(void)
-{
-    // TODO: Start idle pulsing animation
-}
-
-void SetLEDBrightness(uint16_t potValue)
-{
-    // TODO: Adjust LED brightness
-    (void)potValue;
-}
-
 
 void LEDService_Update(void)
 {
@@ -133,25 +120,50 @@ void LEDService_Update(void)
         return;
     }
 
-    uint32_t currentTime = _CP0_GET_COUNT();
+    uint32_t now = _CP0_GET_COUNT();
 
-    // Check whether 250 ms have elapsed
-    if ((uint32_t)(currentTime - LastFlashTime)
-        >= FLASH_INTERVAL_TICKS)
+    if ((FlashDurationTicks != 0u) &&
+        ((uint32_t)(now - FlashStartTime) >= FlashDurationTicks))
     {
-        LastFlashTime = currentTime;
+        LEDsFlashing = false;
+        UpdateLEDOutputs();   // restore saved LED bar
+        return;
+    }
 
-        // Alternate between ON and OFF
+    if ((uint32_t)(now - LastFlashTime) >= FLASH_INTERVAL_TICKS)
+    {
+        LastFlashTime = now;
         FlashState = !FlashState;
-
-        if (FlashState)
-        {
-            WriteShiftRegister(ALL_LEDS_MASK);
-        }
-        else
-        {
-            WriteShiftRegister(0x00);
-        }
+        WriteShiftRegister(FlashState ? ALL_LEDS_MASK : 0x00u);
     }
 }
 
+void SetLEDsPulsing(void)
+{
+    // Not implemented: OE is wired LOW, so no hardware brightness PWM yet.
+}
+
+void SetLEDBrightness(uint16_t potValue)
+{
+    (void)potValue;
+    // Not implemented: requires an LED brightness control strategy.
+}
+
+bool InitLEDService(uint8_t Priority)
+{
+    MyPriority = Priority;
+    ES_Event_t event = {ES_INIT, 0};
+    return ES_PostToService(MyPriority, event);
+}
+
+ES_Event_t RunLEDService(ES_Event_t ThisEvent)
+{
+    (void)ThisEvent;
+    ES_Event_t returnEvent = {ES_NO_EVENT, 0};
+    return returnEvent;
+}
+
+bool PostLEDService(ES_Event_t ThisEvent)
+{
+    return ES_PostToService(MyPriority, ThisEvent);
+}

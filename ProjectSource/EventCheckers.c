@@ -1,183 +1,250 @@
-/****************************************************************************
- Module
-   EventCheckers.c
+#include <xc.h>
+#include <stdint.h>
+#include <stdbool.h>
 
- Revision
-   1.0.1
-
- Description
-   This is the sample for writing event checkers along with the event
-   checkers used in the basic framework test harness.
-
- Notes
-   Note the use of static variables in sample event checker to detect
-   ONLY transitions.
-
- History
- When           Who     What/Why
- -------------- ---     --------
- 08/06/13 13:36 jec     initial version
-****************************************************************************/
-#include <stdlib.h>
-// this will pull in the symbolic definitions for events, which we will want
-// to post in response to detecting events
 #include "ES_Configure.h"
-// This gets us the prototype for ES_PostAll
 #include "ES_Framework.h"
-// this will get us the structure definition for events, which we will need
-// in order to post events in response to detecting events
-#include "ES_Events.h"
-// if you want to use distribution lists then you need those function
-// definitions too.
-#include "ES_PostList.h"
-// This include will pull in all of the headers from the service modules
-// providing the prototypes for all of the post functions
-#include "ES_ServiceHeaders.h"
-// this test harness for the framework references the serial routines that
-// are defined in ES_Port.c
-#include "ES_Port.h"
-// include our own prototypes to insure consistency between header &
-// actual functionsdefinition
 #include "EventCheckers.h"
-#include "PIC32_AD_Lib.h"
+
+#include "SetupService.h"
+#include "PlayService.h"
+#include "DeadmanHandling.h"
 #include "Potentiometer.h"
 #include "LEDService.h"
-// This is the event checking function sample. It is not intended to be
-// included in the module. It is only here as a sample to guide you in writing
-// your own event checkers
-#if 0
-/****************************************************************************
- Function
-   Check4Lock
- Parameters
-   None
- Returns
-   bool: true if a new event was detected
- Description
-   Sample event checker grabbed from the simple lock state machine example
- Notes
-   will not compile, sample only
- Author
-   J. Edward Carryer, 08/06/13, 13:48
-****************************************************************************/
-bool Check4Lock(void)
+#include "SerialUART.h"
+
+// PIC32MX170F256B:
+// RB9 pin 18: knife/chop button, active LOW. DO NOT map UART2 TX here.
+// RB10 pin 21: break-beam input, assumed HIGH when unbroken.
+// RB12 pin 23: potentiometer wiper, ADC AN12.
+// RB13 pin 24: Sanjith's proposed handle switch; may conflict with
+//              your break-beam emitter control. Disabled until resolved.
+#define ENABLE_PHYSICAL_HANDLE_SWITCH 0
+
+#define POT_CHECK_INTERVAL_MS 50u
+#define NUM_DIFFICULTY_LEVELS 5u
+#define CHOP_DEBOUNCE_MS 20u
+#define HANDLE_DEBOUNCE_MS 20u
+#define BEAM_DEBOUNCE_MS 20u
+#define BEAM_UNBROKEN_LEVEL 1u
+
+static uint8_t LastDifficulty = 0u;
+static uint16_t LastPotCheckTime = 0u;
+static bool HandleTouched = false;
+
+// Send handle events only to the services that need them (not every queue).
+static bool PostHandleState(bool touched)
 {
-  static uint8_t  LastPinState = 0;
-  uint8_t         CurrentPinState;
-  bool            ReturnVal = false;
+    if (touched == HandleTouched)
+    {
+        return false;
+    }
 
-  CurrentPinState = LOCK_PIN;
-  // check for pin high AND different from last time
-  // do the check for difference first so that you don't bother with a test
-  // of a port/variable that is not going to matter, since it hasn't changed
-  if ((CurrentPinState != LastPinState) &&
-      (CurrentPinState == LOCK_PIN_HI)) // event detected, so post detected event
-  {
-    ES_Event ThisEvent;
-    ThisEvent.EventType   = ES_LOCK;
-    ThisEvent.EventParam  = 1;
-    // this could be any of the service post functions, ES_PostListx or
-    // ES_PostAll functions
-    ES_PostAll(ThisEvent);
-    ReturnVal = true;
-  }
-  LastPinState = CurrentPinState; // update the state for next time
+    ES_Event_t event = {
+        touched ? ES_HANDLE_TOUCH : ES_HANDLE_RELEASE, 0u
+    };
 
-  return ReturnVal;
+    bool setupPosted = PostSetupService(event);
+    bool deadmanPosted = PostDeadmanHandling(event);
+
+    if (setupPosted && deadmanPosted)
+    {
+        HandleTouched = touched;
+        SerialUART_WriteString(touched ?
+            "Handle TOUCH\r\n" : "Handle RELEASE\r\n");
+        return true;
+    }
+
+    // Queue overflow/failure. Keep current state for a future retry.
+    return false;
 }
 
-#endif
-static uint8_t LastButtonState = 1;
-uint32_t adcResults[1];
-static uint8_t LastPotentiometerState = 0;
-/****************************************************************************
- Function
-   Check4Keystroke
- Parameters
-   None
- Returns
-   bool: true if a new key was detected & posted
- Description
-   checks to see if a new key from the keyboard is detected and, if so,
-   retrieves the key and posts an ES_NewKey event to TestHarnessService0
- Notes
-   The functions that actually check the serial hardware for characters
-   and retrieve them are assumed to be in ES_Port.c
-   Since we always retrieve the keystroke when we detect it, thus clearing the
-   hardware flag that indicates that a new key is ready this event checker
-   will only generate events on the arrival of new characters, even though we
-   do not internally keep track of the last keystroke that we retrieved.
- Author
-   J. Edward Carryer, 08/06/13, 13:48
-****************************************************************************/
 bool Check4Keystroke(void)
 {
-  if (IsNewKeyReady())   // new key waiting?
-  {
-    ES_Event_t ThisEvent;
-    ThisEvent.EventType   = ES_NEW_KEY;
-    ThisEvent.EventParam  = GetNewKey();
-    ES_PostAll(ThisEvent);
-    return true;
-  }
-  return false;
+    char key;
+    if (!SerialUART_ReadChar(&key))
+    {
+        return false;
+    }
+
+    if (key == 'h')
+    {
+        return PostHandleState(true);
+    }
+    if (key == 'r')
+    {
+        return PostHandleState(false);
+    }
+
+    if (key == '\r' || key == '\n')
+    {
+        return false;
+    }
+
+    // Preserve general keyboard events for future GameFSM/PlayService use.
+    ES_Event_t event = {ES_NEW_KEY, (uint16_t)(uint8_t)key};
+    return PostPlayService(event);
+}
+
+bool Check4LimitSwitch(void)
+{
+#if ENABLE_PHYSICAL_HANDLE_SWITCH
+    // RB13 was Sanjith's suggestion. Verify pin allocation before enabling.
+    static bool initialized = false;
+    static uint8_t candidate = 1u;
+    static uint8_t stable = 1u;
+    static uint16_t changedAt = 0u;
+
+    if (!initialized)
+    {
+        ANSELBCLR = (1u << 13);
+        TRISBSET = (1u << 13);
+        CNPUBSET = (1u << 13);  // active-low switch to GND
+        candidate = stable = (uint8_t)PORTBbits.RB13;
+        changedAt = ES_Timer_GetTime();
+        initialized = true;
+        return false;
+    }
+
+    uint16_t now = ES_Timer_GetTime();
+    uint8_t raw = (uint8_t)PORTBbits.RB13;
+
+    if (raw != candidate)
+    {
+        candidate = raw;
+        changedAt = now;
+    }
+
+    if (candidate != stable &&
+        (uint16_t)(now - changedAt) >= HANDLE_DEBOUNCE_MS)
+    {
+        stable = candidate;
+        return PostHandleState(stable == 0u);
+    }
+#endif
+    return false;
 }
 
 bool Check4ChopButton(void)
 {
-  bool returnVal = false;
-    
-    // 1. Read the physical hardware pin (Replace with your actual PIC32 port read)
-    uint8_t CurrentButtonState = PORTBbits.RB9; 
+    static bool initialized = false;
+    static uint8_t candidate = 1u;
+    static uint8_t stable = 1u;
+    static uint16_t changedAt = 0u;
 
-    // 2. Check if the state has changed since the last loop
-    if (CurrentButtonState != LastButtonState)
+    if (!initialized)
     {
-        returnVal = true; // Tell the framework we found an event
-        ES_Event_t NewEvent;
-        
-        // 3. Determine if it was a press or release
-        if (CurrentButtonState == 0) // Button went LOW (pressed)
-        {
-            NewEvent.EventType = ES_CHOP; // need to update when full funcitonality finished
-        }
-        else // Button went HIGH (released)
-        {
-           
-        }
-        
-        NewEvent.EventParam = 0; // You could pass port data here if needed
-        
-        // 4. Post the event. You can post to a specific service, or broadcast it to all
-        ES_PostAll(NewEvent);
+        ANSELBCLR = (1u << 9);
+        TRISBSET = (1u << 9);
+        CNPUBSET = (1u << 9);   // input HIGH until pressed to GND
+        candidate = stable = (uint8_t)PORTBbits.RB9;
+        changedAt = ES_Timer_GetTime();
+        initialized = true;
+        return false;
     }
-    
-    // 5. Update the static variable for the next time the framework calls this function
-    LastButtonState = CurrentButtonState;
-    
-    return returnVal;
+
+    uint16_t now = ES_Timer_GetTime();
+    uint8_t raw = (uint8_t)PORTBbits.RB9;
+
+    if (raw != candidate)
+    {
+        candidate = raw;
+        changedAt = now;
+    }
+
+    if (candidate != stable &&
+        (uint16_t)(now - changedAt) >= CHOP_DEBOUNCE_MS)
+    {
+        stable = candidate;
+
+        // Only generate ES_CHOP when button becomes pressed (LOW).
+        if (stable == 0u)
+        {
+            ES_Event_t event = {ES_CHOP, 0u};
+            return PostPlayService(event);
+        }
+    }
+    return false;
 }
 
 bool PotentiometerRead(void)
 {
-  bool returnVal = false;
-  uint32_t currentPotentiometer = ReadPotentiometer();
-  if (abs(currentPotentiometer - LastPotentiometerState) >= 50) // hysteresis
-  {
-    returnVal = true;
-    LastPotentiometerState = currentPotentiometer;
-    ES_Event_t newEvent;
-    newEvent.EventType = ES_POTENTIOMETER;
-    newEvent.EventParam = currentPotentiometer; // will be between 0 and 1023 for gnd to 3.3V
-    printf("Potentiometer Event Posted! Value: %u\r\n", currentPotentiometer);
-    ES_PostAll(newEvent);
-  }
+    uint16_t now = ES_Timer_GetTime();
+    if ((uint16_t)(now - LastPotCheckTime) < POT_CHECK_INTERVAL_MS)
+    {
+        return false;
+    }
+    LastPotCheckTime = now;
 
-  return returnVal;
+    uint16_t adc = ReadPotentiometer();
+    if (adc > 1023u)
+    {
+        adc = 1023u;
+    }
+
+    // 0..1023 maps to levels 1..5, matching Sanjith's checker.
+    uint8_t level = 1u + (uint8_t)(
+        ((uint32_t)adc * NUM_DIFFICULTY_LEVELS) / 1024u);
+
+    if (level == LastDifficulty)
+    {
+        return false;
+    }
+    LastDifficulty = level;
+
+    // EventParam is a LEVEL, not a raw ADC reading.
+    ES_Event_t event = {ES_POTENTIOMETER, level};
+    return PostSetupService(event);
 }
 
 bool CheckLEDAnimation(void)
 {
-  LEDService_Update();
-  return false; // This function doesn't generate events, it just updates the LED service
+    LEDService_Update();
+    return false;  // updates hardware; does not post an event
+}
+
+bool Check4BeamUnbroken(void)
+{
+    static bool initialized = false;
+    static uint8_t candidate = 0u;
+    static uint8_t stable = 0u;
+    static uint16_t changedAt = 0u;
+
+    if (!initialized)
+    {
+        TRISBSET = (1u << 10);
+        // Sensor is assumed to have an external pull-up.
+        candidate = stable = (uint8_t)PORTBbits.RB10;
+        changedAt = ES_Timer_GetTime();
+        initialized = true;
+        return false;
+    }
+
+    uint16_t now = ES_Timer_GetTime();
+    uint8_t raw = (uint8_t)PORTBbits.RB10;
+
+    if (raw != candidate)
+    {
+        candidate = raw;
+        changedAt = now;
+    }
+
+    if (candidate != stable &&
+        (uint16_t)(now - changedAt) >= BEAM_DEBOUNCE_MS)
+    {
+        stable = candidate;
+
+        // Post only BROKEN -> UNBROKEN transitions.
+        if (stable == BEAM_UNBROKEN_LEVEL)
+        {
+            ES_Event_t event = {ES_BEAM_UNBROKEN, 0u};
+            return PostPlayService(event);
+        }
+    }
+    return false;
+}
+
+bool IsBeamUnbroken(void)
+{
+    return (PORTBbits.RB10 == BEAM_UNBROKEN_LEVEL);
 }
