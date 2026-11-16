@@ -51,7 +51,7 @@
 // the name of the run function
 #define SERV_0_RUN RunDeadmanHandling
 // How big should this services Queue be?
-#define SERV_0_QUEUE_SIZE 3
+#define SERV_0_QUEUE_SIZE 6
 
 
 /****************************************************************************/
@@ -68,7 +68,7 @@
 // the name of the run function
 #define SERV_1_RUN RunPlayService
 // How big should this services Queue be?
-#define SERV_1_QUEUE_SIZE 5
+#define SERV_1_QUEUE_SIZE 10
 #endif
 
 /****************************************************************************/
@@ -107,7 +107,7 @@
 // the name of the run function
 #define SERV_4_RUN RunTREATService
 // How big should this services Queue be?
-#define SERV_4_QUEUE_SIZE 1
+#define SERV_4_QUEUE_SIZE 5
 #endif
 
 /****************************************************************************/
@@ -288,6 +288,8 @@ typedef enum
   ES_AUDIO_CHOP,
   ES_AUDIO_NOT_HIGH_ENOUGH,
   ES_AUDIO_ENDGAME,
+  ES_AUDIO_DIFFICULTY,
+  ES_AUDIO_STOP,
 
   // Other things not mentioned yet
   ES_HANDLE_TOUCHED,
@@ -349,7 +351,7 @@ typedef enum
 #define TIMER7_RESP_FUNC TIMER_UNUSED
 #define TIMER8_RESP_FUNC TIMER_UNUSED
 #define TIMER9_RESP_FUNC TIMER_UNUSED
-#define TIMER10_RESP_FUNC TIMER_UNUSED
+#define TIMER10_RESP_FUNC PostTREATService
 #define TIMER11_RESP_FUNC PostPlayService
 #define TIMER12_RESP_FUNC PostSetupService
 #define TIMER13_RESP_FUNC PostSetupService
@@ -369,6 +371,7 @@ typedef enum
 #define COUNTDOWN_TIMER 12
 #define AUDIO_TIMER 2
 #define TIMER_ARM_TIMER 11
+#define TREAT_TIMER 10
 
 #endif /* ES_CONFIGURE_H */
 

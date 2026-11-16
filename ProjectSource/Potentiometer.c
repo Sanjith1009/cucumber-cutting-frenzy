@@ -53,23 +53,67 @@ void InitPotentiometer(void)
     PotInitialized = true;
 }
 
+
+
 uint16_t ReadPotentiometer(void)
 {
     if (!PotInitialized)
     {
-        return 0;
+        return 0u;
     }
 
-    // Start sampling
+    // Stop any sampling and disable ADC
+    // before changing its configuration.
+    AD1CON1bits.SAMP = 0;
+    AD1CON1bits.ON = 0;
+
+    // Restore RB12 / AN12 as an analog input.
+    // Physical pin 23.
+    TRISBSET = (1u << 12);
+    ANSELBSET = (1u << 12);
+
+    // Select potentiometer channel.
+    AD1CHSbits.CH0SA = 12;
+    AD1CHSbits.CH0NA = 0;
+
+    // Manual sampling and manual conversion.
+    // Clearing SAMP starts the conversion.
+    AD1CON1bits.SSRC = 0;
+    AD1CON1bits.ASAM = 0;
+
+    // Disable channel scanning.
+    AD1CON2bits.CSCNA = 0;
+
+    // Re-enable ADC.
+    AD1CON1bits.ON = 1;
+
+    // Clear the previous conversion-complete flag.
+    AD1CON1bits.DONE = 0;
+
+    // Start sampling the potentiometer.
     AD1CON1bits.SAMP = 1;
 
-    // Wait for sampling and conversion to finish
+    // Allow 50 microseconds for acquisition.
+    // Assumes SYSCLK = 40 MHz and CP0 = 20 MHz.
+    uint32_t start = _CP0_GET_COUNT();
+
+    while ((uint32_t)(_CP0_GET_COUNT() - start)
+           < 1000u)
+    {
+    }
+
+    // End sampling and START a fresh conversion.
+    AD1CON1bits.SAMP = 0;
+
+    // Wait for this conversion to complete.
     while (!AD1CON1bits.DONE)
     {
     }
 
-    // Return 10-bit ADC result (0 to 1023)
-    return (uint16_t)ADC1BUF0;
+    // Return the 10-bit ADC result.
+    return (uint16_t)(ADC1BUF0 & 0x03FFu);
 }
+
+
 
 

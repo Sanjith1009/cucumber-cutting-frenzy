@@ -57,6 +57,9 @@ uint16_t CapSense_ReadRaw(void)
     AD1CHSbits.CH0SA = 4;  // AN4 = RB2
     AD1CON1bits.SSRC = 0;  // Manual conversion
 
+    // clear the completion status left by the previous potentiometer or CTMU reading
+    AD1CON1bits.DONE = 0;
+
     // Connect ADC sample capacitor to sensor.
     AD1CON1bits.SAMP = 1;
 

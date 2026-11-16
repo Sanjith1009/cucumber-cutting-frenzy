@@ -78,6 +78,9 @@ int main(void)
     // Initialize hardware modules
     InitShiftRegister();
     SerialUART_Init();
+    SerialUART_WriteString(
+    "\r\n=== FULL GAME POT DEBUG VERSION 2 ===\r\n"
+    );
     InitServoControl();
     InitPotentiometer();
 

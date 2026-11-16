@@ -144,18 +144,33 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
             break;
         }
 
+        
         case ES_POTENTIOMETER:
         {
             if (SetupPhase == SETUP_SELECTING)
             {
-                uint8_t level = (uint8_t)ThisEvent.EventParam;
-                if (level != difficultyLED)
+                uint8_t level =
+                    (uint8_t)ThisEvent.EventParam;
+
+                if (level >= 1u &&
+                    level <= 5u &&
+                    level != difficultyLED)
                 {
+                    // Update required chops and LEDs
                     SetDifficulty(level);
+
+                    // Play difficulty-change beep
+                    ES_Event_t sound = {
+                        ES_AUDIO_DIFFICULTY, 0u
+                    };
+
+                    PostAudioService(sound);
                 }
             }
+
             break;
         }
+
 
         case ES_HANDLE_TOUCH:
         {
@@ -166,10 +181,13 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
         case ES_HANDLE_RELEASE:
         {
             if (SetupPhase == SETUP_COUNTING_DOWN)
-            {
+            {   
                 ES_Timer_StopTimer(COUNTDOWN_TIMER);
                 SetupPhase = SETUP_SELECTING;
+                ES_Event_t stopAudio = {ES_AUDIO_STOP, 0u};
+                PostAudioService(stopAudio);
                 SerialUART_WriteString("Handle released: countdown canceled\r\n");
+            
             }
             // During gameplay, DeadmanHandling manages the grace period.
             break;

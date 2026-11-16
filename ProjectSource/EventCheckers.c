@@ -170,34 +170,97 @@ bool Check4ChopButton(void)
     return false;
 }
 
+
 bool PotentiometerRead(void)
 {
+    static bool checkerAnnounced = false;
+    if (!checkerAnnounced)
+    {
+        checkerAnnounced = true;
+        SerialUART_WriteString(
+            "Potentiometer checker active\r\n");
+    }
+    static uint16_t LastDebugTime = 0u;
+
     uint16_t now = ES_Timer_GetTime();
-    if ((uint16_t)(now - LastPotCheckTime) < POT_CHECK_INTERVAL_MS)
+
+    // Sample potentiometer every 50 ms
+    if ((uint16_t)(now - LastPotCheckTime)
+        < POT_CHECK_INTERVAL_MS)
     {
         return false;
     }
+
     LastPotCheckTime = now;
 
+    // Read ADC from RB12 / AN12 (pin 23)
     uint16_t adc = ReadPotentiometer();
+
     if (adc > 1023u)
     {
         adc = 1023u;
     }
 
-    // 0..1023 maps to levels 1..5, matching Sanjith's checker.
+    // Convert ADC reading to difficulty 1-5
     uint8_t level = 1u + (uint8_t)(
-        ((uint32_t)adc * NUM_DIFFICULTY_LEVELS) / 1024u);
+        ((uint32_t)adc * NUM_DIFFICULTY_LEVELS)
+        / 1024u
+    );
 
+    // Print sensor status every 500 ms
+    if ((uint16_t)(now - LastDebugTime) >= 500u)
+    {
+        LastDebugTime = now;
+
+        SerialUART_WriteString("POT ADC: ");
+        SerialUART_WriteUInt(adc);
+
+        SerialUART_WriteString(" | Level: ");
+        SerialUART_WriteUInt(level);
+
+        SerialUART_WriteString(" | Last posted: ");
+        SerialUART_WriteUInt(LastDifficulty);
+
+        SerialUART_WriteString(" | AN12 analog: ");
+        SerialUART_WriteUInt(ANSELBbits.ANSB12);
+
+        SerialUART_WriteString(" | ADC channel: ");
+        SerialUART_WriteUInt(AD1CHSbits.CH0SA);
+
+        SerialUART_WriteString(" | ADC enabled: ");
+        SerialUART_WriteUInt(AD1CON1bits.ON);
+
+
+        SerialUART_WriteString("\r\n");
+    }
+
+    // Only post when difficulty changes
     if (level == LastDifficulty)
     {
         return false;
     }
-    LastDifficulty = level;
 
-    // EventParam is a LEVEL, not a raw ADC reading.
-    ES_Event_t event = {ES_POTENTIOMETER, level};
-    return PostSetupService(event);
+    ES_Event_t event = {
+        ES_POTENTIOMETER, level
+    };
+
+    if (PostSetupService(event))
+    {
+        LastDifficulty = level;
+
+        SerialUART_WriteString(
+            ">>> POT EVENT POSTED: Level ");
+
+        SerialUART_WriteUInt(level);
+        SerialUART_WriteString("\r\n");
+
+        return true;
+    }
+
+    SerialUART_WriteString(
+        "WARNING: POT event post failed\r\n");
+
+    return false;
 }
 
 bool CheckLEDAnimation(void)

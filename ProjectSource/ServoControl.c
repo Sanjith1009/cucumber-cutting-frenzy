@@ -33,7 +33,7 @@ void InitServoControl(void)
 {
     ServoInitialized = false;
 
-    if (!PWMSetup_BasicConfig(NUM_SERVOS))
+    if (!PWMSetup_BasicConfig(4u))
     {
         return;
     }

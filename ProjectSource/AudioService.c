@@ -1,206 +1,540 @@
-// Hardware
-#include <xc.h>
-#include "PWM_PIC32.h"
-//#include <proc/p32mx170f256b.h>
 
-// Event & Services Framework
+#include <xc.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "PWM_PIC32.h"
+
 #include "ES_Configure.h"
 #include "ES_Framework.h"
-#include "ES_DeferRecall.h"
-#include "ES_Port.h"
-#include "terminal.h"
-#include "dbprintf.h"
 
 #include "AudioService.h"
-/*----------------------------- Module Defines ----------------------------*/
-// these times assume a 10.000mS/tick timing
-#define ONE_SEC 1000
-#define HALF_SEC (ONE_SEC / 2)
-#define TWO_SEC (ONE_SEC * 2)
-#define FIVE_SEC (ONE_SEC * 5)
 
-#define ENTER_POST     ((MyPriority<<3)|0)
-#define ENTER_RUN      ((MyPriority<<3)|1)
-#define ENTER_TIMEOUT  ((MyPriority<<3)|2)
+// ==========================================
+// BUZZER HARDWARE
+// ==========================================
 
-//#define TEST_INT_POST
-//#define BLINK LED
-/*---------------------------- Module Functions ---------------------------*/
-/* prototypes for private functions for this service.They should be functions
-   relevant to the behavior of this service
-*/
+// OC4 -> RA2, physical pin 9
+// Hardware Timer3 generates the buzzer PWM.
+// Hardware Timer2 remains dedicated to servos.
 
-// static void tone(int pitch, int duration, int volume);
+#define BUZZER_CHANNEL  4u
+#define BUZZER_TIMER    _Timer3_
+
+// 50% duty cycle while sounding
+#define BUZZER_VOLUME   50u
+
+// ==========================================
+// SOUND PRIORITIES
+// ==========================================
+
+// A higher-priority sound cannot be
+// interrupted by a lower-priority sound.
+
+#define AUDIO_PRI_EFFECT      1u
+#define AUDIO_PRI_WARNING     2u
+#define AUDIO_PRI_COMPLETE    3u
+#define AUDIO_PRI_COUNTDOWN   4u
+#define AUDIO_PRI_GAMEOVER    5u
+
+// ==========================================
+// TUNE STRUCTURES
+// ==========================================
+
+// One note consists of a frequency in Hz
+// and a duration in milliseconds.
+//
+// A frequency of zero means silence.
+
+typedef struct
+{
+    uint16_t freq;
+    uint16_t ms;
+} Note_t;
+
+// A tune consists of an array of notes
+// and the number of notes in that array.
+
+typedef struct
+{
+    const Note_t *notes;
+    uint8_t length;
+} Tune_t;
+
+#define TUNE(notes) \
+    {notes, (uint8_t)(sizeof(notes) / sizeof(notes[0]))}
+
+// ==========================================
+// TUNE DEFINITIONS
+// ==========================================
+
+// ------------------------------------------
+// DIFFICULTY CHANGE
+// One short beep whenever difficulty changes.
+// ------------------------------------------
+
+static const Note_t TuneDifficulty[] =
+{
+    {1200, 80}
+};
+
+// ------------------------------------------
+// 3-2-1-GO COUNTDOWN
+//
+// Beep at 0, 1, and 2 seconds.
+// GO begins at 2.8 seconds.
+//
+// Total duration: 3000 ms
+// ------------------------------------------
+
+static const Note_t Tune321Go[] =
+{
+    {880, 200}, {0, 800},
+    {880, 200}, {0, 800},
+    {880, 200}, {0, 600},
+    {1760, 200}
+};
+
+// ------------------------------------------
+// SUCCESSFUL CHOP
+// Short two-note chopping sound.
+// ------------------------------------------
+
+static const Note_t TuneChop[] =
+{
+    {300, 60},
+    {200, 60}
+};
+
+// ------------------------------------------
+// KNIFE NOT HIGH ENOUGH
+// Descending error sound.
+// ------------------------------------------
+
+static const Note_t TuneNotHighEnough[] =
+{
+    {392, 250}, {0, 50},
+    {370, 250}, {0, 50},
+    {349, 250}, {0, 50},
+    {330, 600}
+};
+
+// ------------------------------------------
+// CUCUMBER COMPLETED
+// Rising celebratory tune.
+// ------------------------------------------
+
+static const Note_t TuneFinished[] =
+{
+    {523, 120},
+    {659, 120},
+    {784, 120},
+    {1047, 300}
+};
+
+// ------------------------------------------
+// HANDLE RELEASE / DEADMAN GAME OVER
+// Warning tone.
+// ------------------------------------------
+
+static const Note_t TuneHandleRelease[] =
+{
+    {1000, 150},
+    {700, 150},
+    {1000, 150},
+    {700, 150},
+    {1000, 150},
+    {700, 150}
+};
+
+// ------------------------------------------
+// 60-SECOND GAME OVER
+// Final fanfare.
+// ------------------------------------------
+
+static const Note_t TuneEndGame[] =
+{
+    {523, 150},
+    {659, 150},
+    {784, 150},
+    {1047, 400},
+    {0, 100},
+    {784, 150},
+    {1047, 600}
+};
+
+// ==========================================
+// TUNE OBJECTS
+// ==========================================
+
+static const Tune_t TUNE_DIFFICULTY =
+    TUNE(TuneDifficulty);
+
+static const Tune_t TUNE_321GO =
+    TUNE(Tune321Go);
+
+static const Tune_t TUNE_CHOP =
+    TUNE(TuneChop);
+
+static const Tune_t TUNE_NOT_HIGH =
+    TUNE(TuneNotHighEnough);
+
+static const Tune_t TUNE_FINISHED =
+    TUNE(TuneFinished);
+
+static const Tune_t TUNE_HANDLE_RELEASE =
+    TUNE(TuneHandleRelease);
+
+static const Tune_t TUNE_ENDGAME =
+    TUNE(TuneEndGame);
+
+// ==========================================
+// MODULE VARIABLES
+// ==========================================
+
+static uint8_t MyPriority;
+
+static const Tune_t *CurrentTune = NULL;
+
+static uint8_t NoteIndex = 0u;
+
+static uint8_t CurrentSoundPriority = 0u;
+
+// ==========================================
+// PRIVATE FUNCTION DECLARATIONS
+// ==========================================
+
+static void StartTune(
+    const Tune_t *tune,
+    uint8_t priority
+);
+
 static void PlayCurrentNote(void);
 
+static void StopSound(void);
 
-/*---------------------------- Module Variables ---------------------------*/
-// with the introduction of Gen2, we need a module level Priority variable
-static uint8_t MyPriority;
-// add a deferral queue for up to 3 pending deferrals +1 to allow for overhead
-static ES_Event_t DeferralQueue[5 + 1];
-
-// little data strucutre for tones (for now)
-// frequency, duration, volume
-static int toneTable[6][3] = {
-  {100, 500, 0},
-  {150, 500, 10},
-  {200, 500, 10},
-  {250, 500, 10},
-  {300, 500, 10},
-  {800, 500, 10}
-};
-
-static int tuneTable[2][8]={
-  {7, 1,0,1,0,1,0,5},
-  {3,1,0,4, 0, 0,0,0}
-};
-static int tuneIndex = 0;
-static int toneIndex = 1;
-static bool playing = false;
-
-// TODO THIS IS CURRENTLY JUST A PLACEHOLDER IT NEEDS TO BE PROPERLY IMPLEMENTED LATER
+// ==========================================
+// AUDIO SERVICE INITIALIZATION
+// ==========================================
 
 bool InitAudioService(uint8_t Priority)
 {
-    ES_Event_t ThisEvent;
-
     MyPriority = Priority;
-    /********************************************
-    in here you write your initialization code
-    *******************************************/
 
-    // Configure one PWM channel: OC1
-    PWMSetup_BasicConfig(1);
-    // Use Timer2 for the audio frequency
-    PWMSetup_AssignChannelToTimer(1, _Timer2_);
-    // Start with a 2 kHz tone frequency
-    PWMSetup_SetFreqOnTimer(150, _Timer2_);
-    // Keep the speaker silent initially
-    PWMOperate_SetDutyOnChannel(0, 1);
-    // Configure physical pin 11, RB4, as an output
-    TRISBbits.TRISB4 = 0;
-    // Connect OC1 to RB4; map the pin last
-    PWMSetup_MapChannelToOutputPin(1, PWM_RPB4);
+    CurrentTune = NULL;
+    NoteIndex = 0u;
+    CurrentSoundPriority = 0u;
 
-    // initialize deferral queue for testing Deferal function
-    ES_InitDeferralQueueWith(DeferralQueue, ARRAY_SIZE(DeferralQueue));
+    // ServoControl must already have called:
+    //
+    // PWMSetup_BasicConfig(4u);
+    //
+    // Do NOT call BasicConfig here.
+    // Doing so would reset the servo channels.
 
-    // post the initial transition event
-    ThisEvent.EventType = ES_INIT;
-    if (ES_PostToService(MyPriority, ThisEvent) == true)
-    {
-        return true;
-    }
-    else
+    // Assign OC4 to hardware Timer3
+    if (!PWMSetup_AssignChannelToTimer(
+            BUZZER_CHANNEL, BUZZER_TIMER))
     {
         return false;
     }
+
+    // Configure initial buzzer frequency
+    if (!PWMSetup_SetFreqOnTimer(
+            1000u, BUZZER_TIMER))
+    {
+        return false;
+    }
+
+    // Start with the buzzer silent
+    if (!PWMOperate_SetDutyOnChannel(
+            0u, BUZZER_CHANNEL))
+    {
+        return false;
+    }
+
+    // Map OC4 to RA2, physical pin 9
+    if (!PWMSetup_MapChannelToOutputPin(
+            BUZZER_CHANNEL, PWM_RPA2))
+    {
+        return false;
+    }
+
+    ES_Event_t InitEvent = {
+        ES_INIT, 0u
+    };
+
+    return ES_PostToService(
+        MyPriority, InitEvent
+    );
 }
+
+// ==========================================
+// POST AUDIO EVENT
+// ==========================================
 
 bool PostAudioService(ES_Event_t ThisEvent)
 {
-    return ES_PostToService(MyPriority, ThisEvent);
+    return ES_PostToService(
+        MyPriority, ThisEvent
+    );
 }
+
+// ==========================================
+// AUDIO SERVICE EVENT HANDLER
+// ==========================================
 
 ES_Event_t RunAudioService(ES_Event_t ThisEvent)
 {
+    ES_Event_t ReturnEvent = {
+        ES_NO_EVENT, 0u
+    };
 
-    
-    ES_Event_t ReturnEvent = {ES_NO_EVENT, 0};
-    #ifdef _INCLUDE_BYTE_DEBUG_
-        _HW_ByteDebug_SetValueWithStrobe( ENTER_RUN );
-    #endif  
     switch (ThisEvent.EventType)
     {
+        // ----------------------------------
+        // INITIALIZE
+        // ----------------------------------
+
         case ES_INIT:
         {
-            // Audio hardware initialization
+            StopSound();
             break;
         }
+
+        // ----------------------------------
+        // DIFFICULTY CHANGE
+        // ----------------------------------
+
+        case ES_AUDIO_DIFFICULTY:
+        {
+            StartTune(
+                &TUNE_DIFFICULTY,
+                AUDIO_PRI_EFFECT
+            );
+            break;
+        }
+
+        // ----------------------------------
+        // 3-2-1-GO COUNTDOWN
+        // ----------------------------------
 
         case ES_AUDIO_321GO:
         {
-            // TODO: Play 3-2-1-GO countdown
+            StartTune(
+                &TUNE_321GO,
+                AUDIO_PRI_COUNTDOWN
+            );
             break;
         }
+
+        // ----------------------------------
+        // SUCCESSFUL CHOP
+        // ----------------------------------
 
         case ES_AUDIO_CHOP:
         {
-            // TODO: Play chopping sound
-            if (playing)
-            {
-                break;
-            }
-
-            unsigned int requestedTune = ThisEvent.EventParam;
-            unsigned int numTunes = sizeof(tuneTable) / sizeof(tuneTable[0]);
-
-            if (requestedTune >= numTunes)
-            {
-                DB_printf("Invalid tune number\r\n");
-                break;
-            }
-
-            tuneIndex = requestedTune;
-            toneIndex = 1; // Skip the length entry
-            playing = true;
-            PlayCurrentNote();
-        
+            StartTune(
+                &TUNE_CHOP,
+                AUDIO_PRI_EFFECT
+            );
             break;
         }
 
-        case ES_AUDIO_HANDLE_RELEASE_IDLE:
-        {
-            // TODO: Play handle-release warning
-            break;
-        }
+        // ----------------------------------
+        // KNIFE NOT HIGH ENOUGH
+        // ----------------------------------
 
         case ES_AUDIO_NOT_HIGH_ENOUGH:
         {
-            // TODO: Play height warning
+            StartTune(
+                &TUNE_NOT_HIGH,
+                AUDIO_PRI_WARNING
+            );
             break;
         }
+
+        // ----------------------------------
+        // CUCUMBER COMPLETED
+        // ----------------------------------
+
+        case ES_PLAY_FINISHED_AUDIO:
+        {
+            StartTune(
+                &TUNE_FINISHED,
+                AUDIO_PRI_COMPLETE
+            );
+            break;
+        }
+
+        // ----------------------------------
+        // HANDLE RELEASE GAME OVER
+        // ----------------------------------
+
+        case ES_AUDIO_HANDLE_RELEASE_IDLE:
+        {
+            StartTune(
+                &TUNE_HANDLE_RELEASE,
+                AUDIO_PRI_GAMEOVER
+            );
+            break;
+        }
+
+        // ----------------------------------
+        // 60-SECOND GAME OVER
+        // ----------------------------------
 
         case ES_AUDIO_ENDGAME:
         {
-            // TODO: Play end-game sound
+            StartTune(
+                &TUNE_ENDGAME,
+                AUDIO_PRI_GAMEOVER
+            );
             break;
         }
 
+        // ----------------------------------
+        // STOP AUDIO
+        // ----------------------------------
+
+        case ES_AUDIO_STOP:
+        {
+            StopSound();
+            break;
+        }
+
+        // ----------------------------------
+        // NOTE TIMER EXPIRED
+        // ----------------------------------
+
         case ES_TIMEOUT:
         {
-            if (ThisEvent.EventParam == AUDIO_TIMER && playing)
+            if (ThisEvent.EventParam == AUDIO_TIMER &&
+                CurrentTune != NULL)
             {
-                toneIndex++;
+                NoteIndex++;
 
-                if (toneIndex <= tuneTable[tuneIndex][0])
+                if (NoteIndex < CurrentTune->length)
                 {
                     PlayCurrentNote();
                 }
                 else
                 {
-                    PWMOperate_SetDutyOnChannel(0, 1);
-                    playing = false;
-                    toneIndex = 0;
+                    // All notes completed
+                    StopSound();
                 }
             }
+
             break;
         }
-    
 
         default:
+        {
             break;
+        }
     }
 
     return ReturnEvent;
 }
 
+// ==========================================
+// BEGIN PLAYING A TUNE
+// ==========================================
+
+static void StartTune(
+    const Tune_t *tune,
+    uint8_t priority
+)
+{
+    if (tune == NULL || tune->length == 0u)
+    {
+        return;
+    }
+
+    // Do not interrupt a higher-priority
+    // sound with a lower-priority sound.
+    if (CurrentTune != NULL &&
+        priority < CurrentSoundPriority)
+    {
+        return;
+    }
+
+    // Stop any previous sound and its timer
+    StopSound();
+
+    // Store the new tune
+    CurrentTune = tune;
+    CurrentSoundPriority = priority;
+    NoteIndex = 0u;
+
+    // Begin first note
+    PlayCurrentNote();
+}
+
+// ==========================================
+// PLAY CURRENT NOTE
+// ==========================================
+
 static void PlayCurrentNote(void)
 {
-    int note = tuneTable[tuneIndex][toneIndex];
+    if (CurrentTune == NULL ||
+        NoteIndex >= CurrentTune->length)
+    {
+        StopSound();
+        return;
+    }
 
-    PWMSetup_SetFreqOnTimer(toneTable[note][0], _Timer2_);
-    PWMOperate_SetDutyOnChannel(toneTable[note][2], 1);
-    ES_Timer_InitTimer(AUDIO_TIMER, toneTable[note][1]);
+    const Note_t *note =
+        &CurrentTune->notes[NoteIndex];
+
+    if (note->freq == 0u)
+    {
+        // Rest: silence the buzzer
+        PWMOperate_SetDutyOnChannel(
+            0u, BUZZER_CHANNEL
+        );
+    }
+    else
+    {
+        // Change frequency on Timer3 only
+        if (!PWMSetup_SetFreqOnTimer(
+                note->freq, BUZZER_TIMER))
+        {
+            StopSound();
+            return;
+        }
+
+        // Turn the note on
+        PWMOperate_SetDutyOnChannel(
+            BUZZER_VOLUME,
+            BUZZER_CHANNEL
+        );
+    }
+
+    // Wait for this note to finish.
+    // This does not block other services.
+    ES_Timer_InitTimer(
+        AUDIO_TIMER,
+        note->ms
+    );
+}
+
+// ==========================================
+// STOP ALL SOUND
+// ==========================================
+
+static void StopSound(void)
+{
+    // Disable buzzer output
+    PWMOperate_SetDutyOnChannel(
+        0u, BUZZER_CHANNEL
+    );
+
+    // Stop pending note timer
+    ES_Timer_StopTimer(AUDIO_TIMER);
+
+    CurrentTune = NULL;
+    NoteIndex = 0u;
+    CurrentSoundPriority = 0u;
 }
