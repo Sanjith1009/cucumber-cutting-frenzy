@@ -126,12 +126,6 @@ uint16_t ReadPotentiometer(void)
             AD1CON1bits.ON = 1;
 
             ++PotTimeoutCount;
-            if (PotTimeoutCount == 1u || (PotTimeoutCount % 100u) == 0u)
-            {
-                SerialUART_WriteString("ADC TIMEOUT (pot), count: ");
-                SerialUART_WriteUInt(PotTimeoutCount);
-                SerialUART_WriteString("\r\n");
-            }
             return LastPotValue;   // reuse the previous good reading
         }
     }

@@ -64,12 +64,6 @@ static void SetDifficulty(uint8_t level)
     difficultyLED = level;
     cutThreshold = CalculateDifficulty(level);
     LEDService_SetLitCount(level);
-
-    SerialUART_WriteString("Difficulty: ");
-    SerialUART_WriteUInt(difficultyLED);
-    SerialUART_WriteString(" / 5 | chops per cucumber: ");
-    SerialUART_WriteUInt(cutThreshold);
-    SerialUART_WriteString("\r\n");
 }
 
 static void EnterSelection(void)
@@ -88,10 +82,6 @@ static void EnterSelection(void)
     SetupPhase = SETUP_SELECTING;
     MoveTimerArmServo(TIMER_ARM_PARK_POS);
 
-    SerialUART_WriteString("\r\nWELCOME TO CUCUMBER CUTTING FRENZY!\r\n");
-    SerialUART_WriteString("Select difficulty 1-5 using potentiometer.\r\n");
-    SerialUART_WriteString("Grab knife handle to start.\r\n");
-
     SetDifficulty(PotToDifficultyLevel(ReadPotentiometer()));
 }
 
@@ -103,7 +93,6 @@ static void StartCountdown(void)
     }
 
     SetupPhase = SETUP_COUNTING_DOWN;
-    SerialUART_WriteString("Handle held: starting 3-2-1 countdown\r\n");
 
     ES_Event_t sound = {ES_AUDIO_321GO, 0u};
     PostAudioService(sound);
@@ -124,8 +113,6 @@ static void StartGameplay(void)
     PostPlayService(play);
     ES_Event_t armDeadman = {ES_PLAY, 0u};
     PostDeadmanHandling(armDeadman);
-
-    SerialUART_WriteString("GO! 60 second game started\r\n");
 }
 
 bool InitSetupService(uint8_t Priority)
@@ -197,8 +184,6 @@ ES_Event_t RunSetupService(ES_Event_t ThisEvent)
                 SetupPhase = SETUP_SELECTING;
                 ES_Event_t stopAudio = {ES_AUDIO_STOP, 0u};
                 PostAudioService(stopAudio);
-                SerialUART_WriteString("Handle released: countdown canceled\r\n");
-            
             }
             // During gameplay, DeadmanHandling manages the grace period.
             break;

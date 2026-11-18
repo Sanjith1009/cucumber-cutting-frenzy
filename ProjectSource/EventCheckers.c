@@ -57,8 +57,6 @@ static bool PostHandleState(bool touched)
     if (setupPosted && deadmanPosted)
     {
         HandleTouched = touched;
-        SerialUART_WriteString(touched ?
-           "Handle TOUCH\r\n" : "Handle RELEASE\r\n");
         return true;
     }
 
@@ -177,15 +175,6 @@ bool Check4ChopButton(void)
 
 bool PotentiometerRead(void)
 {
-    static bool checkerAnnounced = false;
-    if (!checkerAnnounced)
-    {
-        checkerAnnounced = true;
-        SerialUART_WriteString(
-            "Potentiometer checker active\r\n");
-    }
-    static uint16_t LastDebugTime = 0u;
-
     uint16_t now = ES_Timer_GetTime();
 
     // Sample potentiometer every 50 ms
@@ -211,33 +200,6 @@ bool PotentiometerRead(void)
         / 1024u
     );
 
-    // Print sensor status every 500 ms
-    if ((uint16_t)(now - LastDebugTime) >= 500u)
-    {
-        LastDebugTime = now;
-
-        SerialUART_WriteString("POT ADC: ");
-        SerialUART_WriteUInt(adc);
-
-        SerialUART_WriteString(" | Level: ");
-        SerialUART_WriteUInt(level);
-
-        SerialUART_WriteString(" | Last posted: ");
-        SerialUART_WriteUInt(LastDifficulty);
-
-        SerialUART_WriteString(" | AN12 analog: ");
-        SerialUART_WriteUInt(ANSELBbits.ANSB12);
-
-        SerialUART_WriteString(" | ADC channel: ");
-        SerialUART_WriteUInt(AD1CHSbits.CH0SA);
-
-        SerialUART_WriteString(" | ADC enabled: ");
-        SerialUART_WriteUInt(AD1CON1bits.ON);
-
-
-        SerialUART_WriteString("\r\n");
-    }
-
     // Only post when difficulty changes
     if (level == LastDifficulty)
     {
@@ -251,18 +213,8 @@ bool PotentiometerRead(void)
     if (PostSetupService(event))
     {
         LastDifficulty = level;
-
-        SerialUART_WriteString(
-            ">>> POT EVENT POSTED: Level ");
-
-        SerialUART_WriteUInt(level);
-        SerialUART_WriteString("\r\n");
-
         return true;
     }
-
-    SerialUART_WriteString(
-        "WARNING: POT event post failed\r\n");
 
     return false;
 }
@@ -287,20 +239,12 @@ void InitBreakBeam(void)
     TRISBSET  = (1u << 10);
 }
 
-// Set to 0 to remove the break-beam debug output.
-#define BEAM_DEBUG 1
-#define BEAM_DEBUG_PERIOD_MS 500u
-
 bool Check4BeamUnbroken(void)
 {
     static bool initialized = false;
     static uint8_t candidate = 0u;
     static uint8_t stable = 0u;
     static uint16_t changedAt = 0u;
-#if BEAM_DEBUG
-    static uint16_t lastDebugTime = 0u;
-    static uint16_t rawEdges = 0u;   // raw pin changes since last report
-#endif
 
     if (!initialized)
     {
@@ -309,13 +253,6 @@ bool Check4BeamUnbroken(void)
         candidate = stable = (uint8_t)PORTBbits.RB10;
         changedAt = ES_Timer_GetTime();
         initialized = true;
-#if BEAM_DEBUG
-        lastDebugTime = changedAt;
-        SerialUART_WriteString("BEAM init: RB10 raw=");
-        SerialUART_WriteUInt(stable);
-        SerialUART_WriteString(stable == BEAM_UNBROKEN_LEVEL ?
-            " (UNBROKEN)\r\n" : " (BROKEN)\r\n");
-#endif
         return false;
     }
 
@@ -326,51 +263,18 @@ bool Check4BeamUnbroken(void)
     {
         candidate = raw;
         changedAt = now;
-#if BEAM_DEBUG
-        ++rawEdges;
-#endif
     }
-
-#if BEAM_DEBUG
-    // Periodic status: shows the live pin level even if it never changes,
-    // and how many raw edges occurred (catches flicker shorter than the
-    // 20 ms debounce that would never become a stable change).
-    if ((uint16_t)(now - lastDebugTime) >= BEAM_DEBUG_PERIOD_MS)
-    {
-        lastDebugTime = now;
-        SerialUART_WriteString("BEAM raw=");
-        SerialUART_WriteUInt(raw);
-        SerialUART_WriteString(" stable=");
-        SerialUART_WriteUInt(stable);
-        SerialUART_WriteString(" edges=");
-        SerialUART_WriteUInt(rawEdges);
-        SerialUART_WriteString("\r\n");
-        rawEdges = 0u;
-    }
-#endif
 
     if (candidate != stable &&
         (uint16_t)(now - changedAt) >= BEAM_DEBOUNCE_MS)
     {
         stable = candidate;
 
-#if BEAM_DEBUG
-        SerialUART_WriteString(stable == BEAM_UNBROKEN_LEVEL ?
-            "BEAM -> UNBROKEN\r\n" : "BEAM -> BROKEN\r\n");
-#endif
-
         // Post only BROKEN -> UNBROKEN transitions.
         if (stable == BEAM_UNBROKEN_LEVEL)
         {
             ES_Event_t event = {ES_BEAM_UNBROKEN, 0u};
-            bool posted = PostPlayService(event);
-#if BEAM_DEBUG
-            if (!posted)
-            {
-                SerialUART_WriteString("BEAM post to PlayService FAILED\r\n");
-            }
-#endif
-            return posted;
+            return PostPlayService(event);
         }
     }
     return false;
@@ -381,25 +285,10 @@ bool IsBeamUnbroken(void)
     return (PORTBbits.RB10 == BEAM_UNBROKEN_LEVEL);
 }
 
-// Capacitive knife handle: physical events with diagnostic UART output.
+// Capacitive knife handle: posts touch/release from the physical sensor.
 // This checker is called by ES_Framework; it never delays for 30 readings.
-static void PrintSignedDelta(int32_t delta)
-{
-    if (delta < 0)
-    {
-        SerialUART_WriteChar('-');
-        SerialUART_WriteUInt((uint32_t)(-delta));
-    }
-    else
-    {
-        SerialUART_WriteUInt((uint32_t)delta);
-    }
-}
-
 bool Check4CapacitiveHandle(void)
 {
-    static bool calibrationAnnounced = false;
-    static uint8_t windowsSinceReport = 0u;
     KnifeCapSensor_Reading_t reading;
 
     if (!KnifeCapSensor_Poll(ES_Timer_GetTime(), &reading))
@@ -410,30 +299,6 @@ bool Check4CapacitiveHandle(void)
     if (!reading.calibrated)
     {
         return false;
-    }
-
-    if (!calibrationAnnounced)
-    {
-        calibrationAnnounced = true;
-        SerialUART_WriteString("KNIFE HANDLE CALIBRATED: baseline=");
-        SerialUART_WriteUInt(reading.baseline);
-        SerialUART_WriteString("\r\n");
-    }
-
-    // Diagnostics around every 300 ms, plus every state transition.
-    ++windowsSinceReport;
-    if (windowsSinceReport >= 5u || reading.stateChanged)
-    {
-        windowsSinceReport = 0u;
-        SerialUART_WriteString("Knife mean: ");
-        SerialUART_WriteUInt(reading.mean);
-        SerialUART_WriteString(" | var: ");
-        SerialUART_WriteUInt(reading.variance);
-        SerialUART_WriteString(" | delta: ");
-        PrintSignedDelta(reading.delta);
-        SerialUART_WriteString(" | ");
-        SerialUART_WriteString(reading.held ? "HELD" : "RELEASED");
-        SerialUART_WriteString("\r\n");
     }
 
     // This also retries if posting failed on the prior completed window.

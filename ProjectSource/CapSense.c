@@ -110,12 +110,6 @@ uint16_t CapSense_ReadRaw(void)
             AD1CON1bits.SSRC = savedSSRC;
 
             ++CapTimeoutCount;
-            if (CapTimeoutCount == 1u || (CapTimeoutCount % 100u) == 0u)
-            {
-                SerialUART_WriteString("ADC TIMEOUT (capsense), count: ");
-                SerialUART_WriteUInt(CapTimeoutCount);
-                SerialUART_WriteString("\r\n");
-            }
             return LastCapValue;   // reuse the previous good reading
         }
     }

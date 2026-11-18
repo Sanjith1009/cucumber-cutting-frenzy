@@ -39,7 +39,6 @@ static void FinishDispensing(void)
     State = DISPENSER_IDLE;
     TreatsRemaining = 0u;
 
-    SerialUART_WriteString("Dispensing complete - back to setup\r\n");
     ES_Event_t reset = {ES_RESET, 0u};
     PostSetupService(reset);
 }
@@ -93,10 +92,6 @@ ES_Event_t RunTREATService(ES_Event_t ThisEvent)
             {
                 TreatsRemaining = MAX_TREATS_PER_GAME;
             }
-
-            SerialUART_WriteString("Treats to dispense: ");
-            SerialUART_WriteUInt(TreatsRemaining);
-            SerialUART_WriteString("\r\n");
 
             OpenNextTreat();
             break;

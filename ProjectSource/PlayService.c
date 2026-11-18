@@ -77,9 +77,6 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
 
             LEDService_ShowCutProgress(0u, cutThreshold);
             StartTimerArm();
-            SerialUART_WriteString("Gameplay started, initial highEnough=");
-            SerialUART_WriteUInt(highEnough);
-            SerialUART_WriteString("\r\n");
             // SetupService owns starting PLAY_TIMER.
             break;
         }
@@ -116,15 +113,6 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
             if (isPlaying && handleHeld)
             {
                 highEnough = true;
-                SerialUART_WriteString("Play: BEAM_UNBROKEN -> highEnough=1\r\n");
-            }
-            else
-            {
-                SerialUART_WriteString("Play: BEAM_UNBROKEN ignored, playing=");
-                SerialUART_WriteUInt(isPlaying);
-                SerialUART_WriteString(" handleHeld=");
-                SerialUART_WriteUInt(handleHeld);
-                SerialUART_WriteString("\r\n");
             }
             break;
         }
@@ -133,21 +121,14 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
         {
             if (!isPlaying || !handleHeld)
             {
-                SerialUART_WriteString("Play: CHOP ignored, playing=");
-                SerialUART_WriteUInt(isPlaying);
-                SerialUART_WriteString(" handleHeld=");
-                SerialUART_WriteUInt(handleHeld);
-                SerialUART_WriteString("\r\n");
                 break;
             }
 
             if (!highEnough)
             {
-                SerialUART_WriteString("Play: CHOP but highEnough=0 -> womp\r\n");
                 PostAudioCue(ES_AUDIO_NOT_HIGH_ENOUGH);
                 break;
             }
-            SerialUART_WriteString("Play: CHOP counted\r\n");
 
             ++chopCounter;
             highEnough = false;
@@ -159,9 +140,6 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
                 LEDService_ShowCutProgress(0u, cutThreshold);
                 LEDService_FlashForMs(1000u);
                 PostAudioCue(ES_PLAY_FINISHED_AUDIO);
-                SerialUART_WriteString("Cucumber completed! Treat count: ");
-                SerialUART_WriteUInt(treatCount);
-                SerialUART_WriteString("\r\n");
             }
             else
             {
@@ -200,10 +178,6 @@ static void EndGame(void)
 
     ES_Event_t disarm = {ES_NOT_PLAYING, 0u};
     PostDeadmanHandling(disarm);
-
-    SerialUART_WriteString("Game over. Earned treats: ");
-    SerialUART_WriteUInt(treatCount);
-    SerialUART_WriteString("\r\n");
 
     PostAudioCue(ES_AUDIO_ENDGAME);
 

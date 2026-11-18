@@ -84,7 +84,6 @@ ES_Event_t RunDeadmanHandling(ES_Event_t ThisEvent)
                 PostPlayService(event);
                 GraceTimerActive = true;
                 ES_Timer_InitTimer(DEADMAN_TIMER, DEADMAN_GRACE_MS);
-                SerialUART_WriteString("Handle released - re-grab within 3s\r\n");
             }
             break;
         }
@@ -99,7 +98,6 @@ ES_Event_t RunDeadmanHandling(ES_Event_t ThisEvent)
             {
                 GraceTimerActive = false;
                 GameActive = false;
-                SerialUART_WriteString("Deadman timeout - game aborted\r\n");
 
                 ES_Event_t stop = {ES_NOT_PLAYING, 0u};
                 PostPlayService(stop);
