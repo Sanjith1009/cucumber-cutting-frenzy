@@ -164,3 +164,10 @@
 76	208	8167444515967023	CMakeFiles/Framework4PIC32_2026_default_Bin2Hex	8469b31513bb2dee
 76	208	8167444515967023	C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/out/Framework4PIC32_2026/production/default-production.hex	8469b31513bb2dee
 76	208	8167444515967023	C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_Bin2Hex	8469b31513bb2dee
+58	377	8167450027404791	CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/Potentiometer.c.o	b7bbeffe17d67b02
+69	379	8167450027511109	CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/SetupService.c.o	473c3e3bd15b115f
+42	415	8167450027241940	CMakeFiles/Framework4PIC32_2026_default_default_XC32_compile.dir/C_/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/ProjectSource/PlayService.c.o	758cb72923645a87
+415	1160	8167450030982988	C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/out/Framework4PIC32_2026/production/default-production.elf	f56a4fd18aac34a9
+1161	1294	8167450038433596	CMakeFiles/Framework4PIC32_2026_default_Bin2Hex	8469b31513bb2dee
+1161	1294	8167450038433596	C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/out/Framework4PIC32_2026/production/default-production.hex	8469b31513bb2dee
+1161	1294	8167450038433596	C:/Users/sanji/MPLABProjects/ME218A_FINAL_PROJECT/_build/Framework4PIC32_2026/default.production/CMakeFiles/Framework4PIC32_2026_default_Bin2Hex	8469b31513bb2dee

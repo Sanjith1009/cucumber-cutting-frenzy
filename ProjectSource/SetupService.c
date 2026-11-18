@@ -26,7 +26,7 @@ typedef enum
 static uint8_t MyPriority;
 static SetupPhase_t SetupPhase = SETUP_SELECTING;
 static uint8_t difficultyLED = 1u;
-static uint16_t cutThreshold = 3u;
+static uint16_t cutThreshold = 20u;
 
 static uint8_t PotToDifficultyLevel(uint16_t adc)
 {
@@ -40,7 +40,7 @@ static uint8_t PotToDifficultyLevel(uint16_t adc)
 
 static uint16_t CalculateDifficulty(uint16_t level)
 {
-    // difficulty just scales with 5 times the current level, clamped 1 to 5
+    // 20 chops per treat per level: level 1 = 20 ... level 5 = 100
     if (level < 1u)
     {
         level = 1u;
@@ -51,7 +51,7 @@ static uint16_t CalculateDifficulty(uint16_t level)
         level = 5u;
     }
 
-    return 5u * level;
+    return 20u * level;
 }
 
 

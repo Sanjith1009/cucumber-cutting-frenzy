@@ -130,8 +130,9 @@ uint16_t ReadPotentiometer(void)
         }
     }
 
-    // Return the 10-bit ADC result.
-    LastPotValue = (uint16_t)(ADC1BUF0 & 0x03FFu);
+    // Return the 10-bit ADC result, inverted so turning the knob
+    // clockwise raises the value (and the difficulty).
+    LastPotValue = (uint16_t)(1023u - (ADC1BUF0 & 0x03FFu));
     return LastPotValue;
 }
 

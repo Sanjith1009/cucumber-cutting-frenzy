@@ -23,7 +23,7 @@ static bool handleHeld = false;
 static bool highEnough = false;
 static uint16_t chopCounter = 0u;
 static uint16_t treatCount = 0u;
-static uint16_t cutThreshold = 5u;
+static uint16_t cutThreshold = 20u;
 static uint32_t armElapsedMs = 0u;
 static uint8_t armPosition = ARM_END_POSITION;
 
@@ -70,9 +70,9 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
             chopCounter = 0u;
             treatCount = 0u;
             cutThreshold = ThisEvent.EventParam;
-            if (cutThreshold < 5u || cutThreshold > 25u)
+            if (cutThreshold < 20u || cutThreshold > 100u)
             {
-                cutThreshold = 5u;
+                cutThreshold = 20u;
             }
 
             LEDService_ShowCutProgress(0u, cutThreshold);
