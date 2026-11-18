@@ -18,9 +18,13 @@
 // RB9 pin 18: knife/chop button, active LOW. DO NOT map UART2 TX here.
 // RB10 pin 21: break-beam input, assumed HIGH when unbroken.
 // RB12 pin 23: potentiometer wiper, ADC AN12.
-// RB13 pin 24: Sanjith's proposed handle switch; may conflict with
-//              your break-beam emitter control. Disabled until resolved.
+// RB13 pin 24: break-beam IR EMITTER power, driven HIGH by InitBreakBeam().
+//              The old limit-switch checker also used RB13, so it must stay
+//              disabled (or be moved to another pin).
 #define ENABLE_PHYSICAL_HANDLE_SWITCH 0
+#if ENABLE_PHYSICAL_HANDLE_SWITCH
+#error "RB13 powers the break-beam emitter; move the limit switch to another pin first"
+#endif
 // Disable h/r simulation while the physical capacitive handle is active.
 #define ENABLE_SERIAL_HANDLE_SIMULATION 0
 
@@ -54,7 +58,7 @@ static bool PostHandleState(bool touched)
     {
         HandleTouched = touched;
         SerialUART_WriteString(touched ?
-            "Handle TOUCH\r\n" : "Handle RELEASE\r\n");
+           "Handle TOUCH\r\n" : "Handle RELEASE\r\n");
         return true;
     }
 
@@ -269,12 +273,34 @@ bool CheckLEDAnimation(void)
     return false;  // updates hardware; does not post an event
 }
 
+// Power the IR emitter (RB13 output HIGH) and make RB10 the receiver input.
+// Called from main before the framework starts so the beam is stable by
+// the time Check4BeamUnbroken takes its first reading.
+void InitBreakBeam(void)
+{
+    // Emitter: RB13 (pin 24) digital output, driven HIGH
+    ANSELBCLR = (1u << 13);
+    LATBSET   = (1u << 13);
+    TRISBCLR  = (1u << 13);
+
+    // Receiver: RB10 (pin 21) digital input (external pull-up)
+    TRISBSET  = (1u << 10);
+}
+
+// Set to 0 to remove the break-beam debug output.
+#define BEAM_DEBUG 1
+#define BEAM_DEBUG_PERIOD_MS 500u
+
 bool Check4BeamUnbroken(void)
 {
     static bool initialized = false;
     static uint8_t candidate = 0u;
     static uint8_t stable = 0u;
     static uint16_t changedAt = 0u;
+#if BEAM_DEBUG
+    static uint16_t lastDebugTime = 0u;
+    static uint16_t rawEdges = 0u;   // raw pin changes since last report
+#endif
 
     if (!initialized)
     {
@@ -283,6 +309,13 @@ bool Check4BeamUnbroken(void)
         candidate = stable = (uint8_t)PORTBbits.RB10;
         changedAt = ES_Timer_GetTime();
         initialized = true;
+#if BEAM_DEBUG
+        lastDebugTime = changedAt;
+        SerialUART_WriteString("BEAM init: RB10 raw=");
+        SerialUART_WriteUInt(stable);
+        SerialUART_WriteString(stable == BEAM_UNBROKEN_LEVEL ?
+            " (UNBROKEN)\r\n" : " (BROKEN)\r\n");
+#endif
         return false;
     }
 
@@ -293,18 +326,51 @@ bool Check4BeamUnbroken(void)
     {
         candidate = raw;
         changedAt = now;
+#if BEAM_DEBUG
+        ++rawEdges;
+#endif
     }
+
+#if BEAM_DEBUG
+    // Periodic status: shows the live pin level even if it never changes,
+    // and how many raw edges occurred (catches flicker shorter than the
+    // 20 ms debounce that would never become a stable change).
+    if ((uint16_t)(now - lastDebugTime) >= BEAM_DEBUG_PERIOD_MS)
+    {
+        lastDebugTime = now;
+        SerialUART_WriteString("BEAM raw=");
+        SerialUART_WriteUInt(raw);
+        SerialUART_WriteString(" stable=");
+        SerialUART_WriteUInt(stable);
+        SerialUART_WriteString(" edges=");
+        SerialUART_WriteUInt(rawEdges);
+        SerialUART_WriteString("\r\n");
+        rawEdges = 0u;
+    }
+#endif
 
     if (candidate != stable &&
         (uint16_t)(now - changedAt) >= BEAM_DEBOUNCE_MS)
     {
         stable = candidate;
 
+#if BEAM_DEBUG
+        SerialUART_WriteString(stable == BEAM_UNBROKEN_LEVEL ?
+            "BEAM -> UNBROKEN\r\n" : "BEAM -> BROKEN\r\n");
+#endif
+
         // Post only BROKEN -> UNBROKEN transitions.
         if (stable == BEAM_UNBROKEN_LEVEL)
         {
             ES_Event_t event = {ES_BEAM_UNBROKEN, 0u};
-            return PostPlayService(event);
+            bool posted = PostPlayService(event);
+#if BEAM_DEBUG
+            if (!posted)
+            {
+                SerialUART_WriteString("BEAM post to PlayService FAILED\r\n");
+            }
+#endif
+            return posted;
         }
     }
     return false;

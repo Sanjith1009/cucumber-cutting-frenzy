@@ -77,7 +77,9 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
 
             LEDService_ShowCutProgress(0u, cutThreshold);
             StartTimerArm();
-            SerialUART_WriteString("Gameplay started\r\n");
+            SerialUART_WriteString("Gameplay started, initial highEnough=");
+            SerialUART_WriteUInt(highEnough);
+            SerialUART_WriteString("\r\n");
             // SetupService owns starting PLAY_TIMER.
             break;
         }
@@ -114,6 +116,15 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
             if (isPlaying && handleHeld)
             {
                 highEnough = true;
+                SerialUART_WriteString("Play: BEAM_UNBROKEN -> highEnough=1\r\n");
+            }
+            else
+            {
+                SerialUART_WriteString("Play: BEAM_UNBROKEN ignored, playing=");
+                SerialUART_WriteUInt(isPlaying);
+                SerialUART_WriteString(" handleHeld=");
+                SerialUART_WriteUInt(handleHeld);
+                SerialUART_WriteString("\r\n");
             }
             break;
         }
@@ -122,14 +133,21 @@ ES_Event_t RunPlayService(ES_Event_t ThisEvent)
         {
             if (!isPlaying || !handleHeld)
             {
+                SerialUART_WriteString("Play: CHOP ignored, playing=");
+                SerialUART_WriteUInt(isPlaying);
+                SerialUART_WriteString(" handleHeld=");
+                SerialUART_WriteUInt(handleHeld);
+                SerialUART_WriteString("\r\n");
                 break;
             }
 
             if (!highEnough)
             {
+                SerialUART_WriteString("Play: CHOP but highEnough=0 -> womp\r\n");
                 PostAudioCue(ES_AUDIO_NOT_HIGH_ENOUGH);
                 break;
             }
+            SerialUART_WriteString("Play: CHOP counted\r\n");
 
             ++chopCounter;
             highEnough = false;
@@ -191,6 +209,8 @@ static void EndGame(void)
 
     // IMPORTANT: No immediate ES_RESET here. TREATService will post ES_RESET
     // after the final treat is dispensed (or immediately if treatCount is 0).
+    
+    
     ES_Event_t dispense = {ES_DISPENSE_TREATS, treatCount};
     if (!PostTREATService(dispense))
     {

@@ -11,7 +11,7 @@
 // These are ServoControl command units 0..100, NOT physical degrees.
 // Start with the mechanism disconnected and calibrate both positions.
 #define TREAT_SERVO_CLOSED_POS 50u
-#define TREAT_SERVO_OPEN_POS   75u
+#define TREAT_SERVO_OPEN_POS   175u
 #define TREAT_OPEN_MS         350u
 #define TREAT_CLOSED_MS       400u
 #define MAX_TREATS_PER_GAME   10u

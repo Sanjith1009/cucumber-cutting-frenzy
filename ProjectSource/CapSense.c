@@ -2,6 +2,13 @@
 #include <xc.h>
 #include <stdint.h>
 #include "CapSense.h"
+#include "SerialUART.h"
+
+// ADC conversion timeout: 250 us at CP0 = 20 MHz (normal is ~40 us)
+#define CAP_ADC_TIMEOUT_TICKS 5000u
+
+static uint16_t LastCapValue = 0u;     // returned if a conversion times out
+static uint32_t CapTimeoutCount = 0u;
 
 // Assumes 40 MHz system clock:
 // CP0 counts at 20 MHz.
@@ -84,11 +91,37 @@ uint16_t CapSense_ReadRaw(void)
     // End sampling and perform conversion.
     AD1CON1bits.SAMP = 0;
 
+    // Wait for the conversion with a timeout. A normal conversion takes
+    // ~40 us; if it never finishes (e.g. ESD on the electrode upset the
+    // ADC/CTMU), give up instead of freezing the whole program.
+    uint32_t start = _CP0_GET_COUNT();
     while (!AD1CON1bits.DONE)
     {
+        if ((uint32_t)(_CP0_GET_COUNT() - start) >= CAP_ADC_TIMEOUT_TICKS)
+        {
+            // Reset the ADC module and make sure the CTMU is idle.
+            AD1CON1bits.ON = 0;
+            CTMUCONbits.EDG1STAT = 0;
+            CTMUCONbits.EDG2STAT = 0;
+            CTMUCONbits.IDISSEN = 0;
+            AD1CON1bits.ON = 1;
+
+            AD1CHSbits.CH0SA = savedChannel;
+            AD1CON1bits.SSRC = savedSSRC;
+
+            ++CapTimeoutCount;
+            if (CapTimeoutCount == 1u || (CapTimeoutCount % 100u) == 0u)
+            {
+                SerialUART_WriteString("ADC TIMEOUT (capsense), count: ");
+                SerialUART_WriteUInt(CapTimeoutCount);
+                SerialUART_WriteString("\r\n");
+            }
+            return LastCapValue;   // reuse the previous good reading
+        }
     }
 
     uint16_t result = (uint16_t)ADC1BUF0;
+    LastCapValue = result;
 
     // Restore ADC settings for potentiometer.
     AD1CHSbits.CH0SA = savedChannel;

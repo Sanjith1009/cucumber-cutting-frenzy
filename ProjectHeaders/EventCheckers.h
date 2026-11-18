@@ -12,6 +12,10 @@ bool CheckLEDAnimation(void);
 bool Check4BeamUnbroken(void);
 bool Check4CapacitiveHandle(void);
 
+// Powers the break-beam IR emitter (RB13 HIGH) and sets up the receiver
+// input (RB10). Call once from main before ES_Initialize.
+void InitBreakBeam(void);
+
 // Direct sensor read used by PlayService when ES_PLAY begins.
 bool IsBeamUnbroken(void);
 

@@ -15,6 +15,7 @@
 #include "../ProjectHeaders/SerialUART.h"
 #include "../ProjectHeaders/KnifeCapSensor.h"
 #include "../ProjectHeaders/CapSense.h"
+#include "../ProjectHeaders/EventCheckers.h"
 #include "../ProjectHeaders/PIC32_SPI_HAL.h"
 
 #include "PWM_PIC32.h"
@@ -62,6 +63,98 @@ static void ConfigurePinMappings(void)
 }
 
 // ========================================
+// CRASH / RESET DIAGNOSTICS
+// ========================================
+
+// Stop the buzzer PWM (OC4 on RA2) and hold the pin low. The PWM runs in
+// hardware, so without this a crash leaves the last note playing forever.
+static void SilenceBuzzer(void)
+{
+    OC4RS = 0u;
+    OC4CONbits.ON = 0;
+    LATACLR = (1u << 2);
+}
+
+static void WriteHex32(uint32_t value)
+{
+    static const char hexDigits[] = "0123456789ABCDEF";
+    SerialUART_WriteString("0x");
+    for (int8_t shift = 28; shift >= 0; shift -= 4)
+    {
+        SerialUART_WriteChar(hexDigits[(value >> shift) & 0xFu]);
+    }
+}
+
+// Print why the PIC last reset, then clear the flags so the next reset
+// reports only its own cause.
+static void PrintResetCause(void)
+{
+    SerialUART_WriteString("Reset cause:");
+
+    if (RCONbits.POR)
+    {
+        // BOR is also set on every power-on, so only report it alone.
+        SerialUART_WriteString(" POWER-ON");
+    }
+    else if (RCONbits.BOR)
+    {
+        SerialUART_WriteString(" BROWN-OUT (supply dipped)");
+    }
+    if (RCONbits.EXTR)
+    {
+        SerialUART_WriteString(" MCLR-PIN/PROGRAMMER");
+    }
+    if (RCONbits.SWR)
+    {
+        SerialUART_WriteString(" SOFTWARE");
+    }
+    if (RCONbits.WDTO)
+    {
+        SerialUART_WriteString(" WATCHDOG");
+    }
+    if (RCONbits.CMR)
+    {
+        SerialUART_WriteString(" CONFIG-MISMATCH");
+    }
+    SerialUART_WriteString("\r\n");
+
+    RCONCLR = _RCON_POR_MASK | _RCON_BOR_MASK | _RCON_EXTR_MASK |
+              _RCON_SWR_MASK | _RCON_WDTO_MASK | _RCON_CMR_MASK;
+}
+
+// Replaces the default exception handler (an empty infinite loop).
+// Silences the buzzer and reports the cause on UART2, then halts.
+void __attribute__((nomips16, noreturn)) _general_exception_handler(void)
+{
+    uint32_t cause = _CP0_GET_CAUSE();
+    uint32_t epc = _CP0_GET_EPC();
+    uint32_t excCode = (cause >> 2) & 0x1Fu;
+
+    SilenceBuzzer();
+
+    SerialUART_WriteString("\r\n!!! CPU EXCEPTION code ");
+    SerialUART_WriteUInt(excCode);
+    switch (excCode)
+    {
+        case 4:  SerialUART_WriteString(" (bad address on load/fetch)"); break;
+        case 5:  SerialUART_WriteString(" (bad address on store)"); break;
+        case 6:  SerialUART_WriteString(" (bus error on fetch)"); break;
+        case 7:  SerialUART_WriteString(" (bus error on load/store)"); break;
+        case 10: SerialUART_WriteString(" (illegal instruction)"); break;
+        case 12: SerialUART_WriteString(" (arithmetic overflow)"); break;
+        case 13: SerialUART_WriteString(" (trap, e.g. divide by zero)"); break;
+        default: break;
+    }
+    SerialUART_WriteString("\r\nEPC (faulting address): ");
+    WriteHex32(epc);
+    SerialUART_WriteString("\r\nHalted. Look up EPC in the .map/.lst file.\r\n");
+
+    for (;;)
+    {
+    }
+}
+
+// ========================================
 // MAIN
 // ========================================
 
@@ -81,6 +174,7 @@ int main(void)
     SerialUART_WriteString(
     "\r\n=== FULL GAME POT DEBUG VERSION 2 ===\r\n"
     );
+    PrintResetCause();
     InitServoControl();
     InitPotentiometer();
 
@@ -90,6 +184,9 @@ int main(void)
     KnifeCapSensor_Init(); // calibrate with the handle untouched
 
     SerialUART_WriteString("Knife sensor: leave handle untouched during calibration.\r\n");
+
+    // Power the break-beam IR emitter (RB13) and set up its receiver (RB10)
+    InitBreakBeam();
 
     // Keep treat servo stationary
     MoveServo(2, 50);
@@ -101,6 +198,12 @@ int main(void)
         ErrorType = ES_Run();
     }
     //if we got to here, there was an error
+    // Silence the buzzer and report on UART2 (asserts print on UART1).
+    SilenceBuzzer();
+    SerialUART_WriteString("\r\n!!! FRAMEWORK STOPPED, ES_Return_t = ");
+    SerialUART_WriteUInt((uint32_t)ErrorType);
+    SerialUART_WriteString("\r\n");
+
     switch (ErrorType)
     {
         case FailedPost:

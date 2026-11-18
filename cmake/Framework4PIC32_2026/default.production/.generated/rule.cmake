@@ -81,7 +81,7 @@ function(Framework4PIC32_2026_default_link_rule target)
         "-g"
         "${MP_EXTRA_LD_PRE}"
         "-mprocessor=32MX170F256B"
-        "-Wl,--defsym=__MPLAB_BUILD=1${MP_EXTRA_LD_POST},--no-code-in-dinit,--no-dinit-in-serial-mem,-Map=mem.map,--report-mem,--memorysummary,memoryfile.xml"
+        "-Wl,--defsym=__MPLAB_BUILD=1${MP_EXTRA_LD_POST},--defsym=_min_heap_size=512,--no-code-in-dinit,--no-dinit-in-serial-mem,-Map=mem.map,--report-mem,--memorysummary,memoryfile.xml"
         "-mdfp=${PACK_REPO_PATH}/Microchip/PIC32MX_DFP/1.7.380")
     list(REMOVE_ITEM options "")
     target_link_options(${target} PRIVATE "${options}")

@@ -4,7 +4,15 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "SerialUART.h"
+
 static bool PotInitialized = false;
+
+// ADC conversion timeout: 250 us at CP0 = 20 MHz (normal is ~40 us)
+#define POT_ADC_TIMEOUT_TICKS 5000u
+
+static uint16_t LastPotValue = 0u;      // returned if a conversion times out
+static uint32_t PotTimeoutCount = 0u;
 
 void InitPotentiometer(void)
 {
@@ -105,13 +113,32 @@ uint16_t ReadPotentiometer(void)
     // End sampling and START a fresh conversion.
     AD1CON1bits.SAMP = 0;
 
-    // Wait for this conversion to complete.
+    // Wait for this conversion to complete, with a timeout.
+    // A normal conversion takes ~40 us (12 TAD x 3.2 us). If it never
+    // finishes (e.g. ESD upset the ADC), give up instead of freezing.
+    start = _CP0_GET_COUNT();
     while (!AD1CON1bits.DONE)
     {
+        if ((uint32_t)(_CP0_GET_COUNT() - start) >= POT_ADC_TIMEOUT_TICKS)
+        {
+            // Reset the ADC module; the next read reconfigures it anyway.
+            AD1CON1bits.ON = 0;
+            AD1CON1bits.ON = 1;
+
+            ++PotTimeoutCount;
+            if (PotTimeoutCount == 1u || (PotTimeoutCount % 100u) == 0u)
+            {
+                SerialUART_WriteString("ADC TIMEOUT (pot), count: ");
+                SerialUART_WriteUInt(PotTimeoutCount);
+                SerialUART_WriteString("\r\n");
+            }
+            return LastPotValue;   // reuse the previous good reading
+        }
     }
 
     // Return the 10-bit ADC result.
-    return (uint16_t)(ADC1BUF0 & 0x03FFu);
+    LastPotValue = (uint16_t)(ADC1BUF0 & 0x03FFu);
+    return LastPotValue;
 }
 
 
