@@ -37,12 +37,23 @@ static uint8_t PotToDifficultyLevel(uint16_t adc)
     return 1u + (uint8_t)(((uint32_t)adc * 5u) / 1024u);
 }
 
+
 static uint16_t CalculateDifficulty(uint16_t level)
 {
-    if (level < 1u) level = 1u;
-    if (level > 5u) level = 5u;
-    return 3u + ((level - 1u) * 7u) / 4u;
+    // difficulty just scales with 5 times the current level, clamped 1 to 5
+    if (level < 1u)
+    {
+        level = 1u;
+    }
+
+    if (level > 5u)
+    {
+        level = 5u;
+    }
+
+    return 5u * level;
 }
+
 
 static void SetDifficulty(uint8_t level)
 {
