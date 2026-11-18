@@ -19,15 +19,15 @@
 #define SERVO_UPDATE_TICKS   1000000u
 #define REPORT_TICKS        20000000u
 
-#define GAME_DURATION_SECONDS 30u
-#define GAME_DURATION_MS      30000u
+#define GAME_DURATION_SECONDS 60u
+#define GAME_DURATION_MS      60000u
 
 #define GAME_DURATION_TICKS \
     (GAME_DURATION_SECONDS * CP0_TICKS_PER_SECOND)
 
 // Previously tested servo command range
-#define GAME_START_POSITION 90u
-#define GAME_END_POSITION   10u
+#define GAME_START_POSITION 100u
+#define GAME_END_POSITION   0u
 
 // ========================================
 // MODULE-LEVEL VARIABLES

@@ -13,8 +13,8 @@
 #include "EventCheckers.h"
 #include "SerialUART.h"
 
-#define ARM_START_POSITION 90u
-#define ARM_END_POSITION   10u
+#define ARM_START_POSITION 100u
+#define ARM_END_POSITION   0u
 #define ARM_UPDATE_MS      50u
 
 static uint8_t MyPriority;
