@@ -98,26 +98,24 @@ static const Note_t Tune321Go[] =
 
 // ------------------------------------------
 // SUCCESSFUL CHOP
-// Short two-note chopping sound.
+// Single short high tone. Kept short so rapid
+// chops don't run together; 1600 Hz so it is
+// distinct from the 1200 Hz difficulty beep.
 // ------------------------------------------
 
 static const Note_t TuneChop[] =
 {
-    {300, 60},
-    {200, 60}
+    {1600, 100}
 };
 
 // ------------------------------------------
 // KNIFE NOT HIGH ENOUGH
-// Descending error sound.
+// Single low buzz.
 // ------------------------------------------
 
 static const Note_t TuneNotHighEnough[] =
 {
-    {392, 250}, {0, 50},
-    {370, 250}, {0, 50},
-    {349, 250}, {0, 50},
-    {330, 600}
+    {150, 400}
 };
 
 // ------------------------------------------
