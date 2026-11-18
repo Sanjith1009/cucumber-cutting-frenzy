@@ -24,9 +24,9 @@ static uint32_t FlashDurationTicks = 0u;  // 0 = keep flashing
 
 static void UpdateLEDOutputs(void)
 {
-    // Counts 0..6 become masks 0x00,0x01,0x03,...,0x3F.
+    // We want to generate our desired logical LED pattern
     uint8_t pattern = (uint8_t)((1u << LitLEDCount) - 1u);
-    WriteShiftRegister(pattern);
+    WriteShiftRegister((uint8_t)(ALL_LEDS_MASK ^ pattern));
 }
 
 void LEDService_SetLitCount(uint8_t count)
@@ -90,7 +90,7 @@ static void StartFlashing(uint32_t durationTicks)
     FlashStartTime = _CP0_GET_COUNT();
     LastFlashTime = FlashStartTime;
     FlashDurationTicks = durationTicks;
-    WriteShiftRegister(ALL_LEDS_MASK);
+    WriteShiftRegister(0x00u);
 }
 
 void FlashAllLEDs(void)
@@ -134,7 +134,7 @@ void LEDService_Update(void)
     {
         LastFlashTime = now;
         FlashState = !FlashState;
-        WriteShiftRegister(FlashState ? ALL_LEDS_MASK : 0x00u);
+        WriteShiftRegister(FlashState ? 0x00u : ALL_LEDS_MASK);
     }
 }
 
