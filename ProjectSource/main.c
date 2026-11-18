@@ -158,79 +158,85 @@ void __attribute__((nomips16, noreturn)) _general_exception_handler(void)
 // MAIN
 // ========================================
 
+int main(void)
+{
+    ES_Return_t ErrorType = Success;
 
+    // Initialize PIC32
+    _HW_PIC32Init();
 
- // =========================================
- // TREAT SERVO CALIBRATION SETTINGS
- // =========================================
+    // Configure peripheral mappings
+    ConfigurePinMappings();
 
- // Change these two values to tune motion.
- // Valid range: 0 to 100.
+    // Initialize hardware modules
+    InitShiftRegister();
+    SerialUART_Init();
+    SerialUART_WriteString(
+    "\r\n=== FULL GAME POT DEBUG VERSION 2 ===\r\n"
+    );
+    PrintResetCause();
+    InitServoControl();
+    InitPotentiometer();
 
- #define TREAT_OPEN_POS       0u
- #define TREAT_CLOSED_POS     100u
+    // CapSense shares ADC1 with the potentiometer; both are polled
+    // cooperatively, never from an ADC interrupt.
+    CapSense_Init();
+    KnifeCapSensor_Init(); // calibrate with the handle untouched
 
- // How long the servo stays at each endpoint.
+    SerialUART_WriteString("Knife sensor: leave handle untouched during calibration.\r\n");
 
- #define OPEN_HOLD_MS         2000u
- #define CLOSED_HOLD_MS       2000u
+    // Power the break-beam IR emitter (RB13) and set up its receiver (RB10)
+    InitBreakBeam();
 
- // PIC32 running at 40 MHz:
- // Core timer runs at 20 MHz.
+    // Keep treat servo stationary
+    MoveTreatServo(0u);
 
- #define CP0_TICKS_PER_MS     20000u
+    // now initialize the Events and Services Framework and start it running
+    ErrorType = ES_Initialize(ES_Timer_RATE_1mS);
+    if (ErrorType == Success)
+    {
+        ErrorType = ES_Run();
+    }
+    //if we got to here, there was an error
+    // Silence the buzzer and report on UART2 (asserts print on UART1).
+    SilenceBuzzer();
+    SerialUART_WriteString("\r\n!!! FRAMEWORK STOPPED, ES_Return_t = ");
+    SerialUART_WriteUInt((uint32_t)ErrorType);
+    SerialUART_WriteString("\r\n");
 
- // =========================================
- // SIMPLE DELAY FUNCTION
- // =========================================
-
- static void DelayMs(uint32_t durationMs)
- {
-     while (durationMs-- > 0u)
-     {
-         uint32_t start = _CP0_GET_COUNT();
-
-         while ((uint32_t)(_CP0_GET_COUNT() - start)
-                < CP0_TICKS_PER_MS)
-         {
-             // Wait 1 ms
-         }
-     }
- }
-
- // =========================================
- // TREAT SERVO CALIBRATION MAIN
- // =========================================
-
- int main(void)
- {
-     // Initialize PIC32 hardware
-     _HW_PIC32Init();
-
-     // Keep existing pin mappings:
-     // Treat servo OC2 -> RB5, physical pin 14
-     ConfigurePinMappings();
-
-     // Initialize PWM and both servo channels
-     InitServoControl();
-
-     // Start at OPEN position
-     MoveTreatServo(TREAT_OPEN_POS);
-
-     // =====================================
-     // REPEATING DISPENSER TEST
-     // =====================================
-
-     while (1)
-     {
-         // OPEN: Treat rolls out
-         MoveTreatServo(TREAT_OPEN_POS);
-         DelayMs(OPEN_HOLD_MS);
-
-         // CLOSED: Next treat loads
-         MoveTreatServo(TREAT_CLOSED_POS);
-         DelayMs(CLOSED_HOLD_MS);
-     }
- }
-
-
+    switch (ErrorType)
+    {
+        case FailedPost:
+        {
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedPost == ErrorType );
+        //DB_printf("Failed on attempt to Post\n");
+        }
+        break;
+        case FailedPointer:
+        {
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedPointer  == ErrorType );
+    //      DB_printf("Failed on NULL pointer\n");
+        }
+        break;
+        case FailedInit:
+        {
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedInit  == ErrorType );
+    //      DB_printf("Failed Initialization\n");
+        }
+        break;
+        default:
+        {
+        ErrorType = 0; // a hack to get a readable assert message
+        assert( FailedOther  == ErrorType );
+    //      DB_printf("Other Failure\n");
+        }
+        break;
+    }
+    for ( ; ;)
+    {
+        ;
+    }
+}
