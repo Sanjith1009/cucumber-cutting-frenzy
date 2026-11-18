@@ -10,10 +10,14 @@
 #define TIMER_ARM_SERVO     1u
 #define SECOND_SERVO        2u
 
-// PWM timer ticks (0.4 us per tick)
+// Original range for the timer-arm servo: 0% to 100% duty cycle, corresponding to 2.5 ms to 5.0 ms pulse width at 50 Hz (20 ms period).
 #define SERVO_MIN_TICKS     2500u
 #define SERVO_CENTER_TICKS  3750u
 #define SERVO_MAX_TICKS     5000u
+
+// expanded range for the treat servo
+#define TREAT_SERVO_MIN_TICKS 2000u
+#define TREAT_SERVO_MAX_TICKS 5500u
 
 static bool ServoInitialized = false;
 
@@ -83,26 +87,49 @@ void InitServoControl(void)
     ServoInitialized = true;
 }
 
-// Move either servo immediately to a position
+// Move either servo immediately to a position 
 void MoveServo(uint8_t servo, uint8_t position)
 {
-    if (!ServoInitialized || servo < 1 || servo > NUM_SERVOS)
+    if (!ServoInitialized ||
+        servo < 1u ||
+        servo > NUM_SERVOS)
     {
         return;
     }
 
-    if (position > 100)
+    if (position > 100u)
     {
-        position = 100;
+        position = 100u;
+    }
+
+    uint16_t minTicks;
+    uint16_t maxTicks;
+
+    if (servo == SECOND_SERVO)
+    {
+        // Treat servo gets expanded range
+        minTicks = TREAT_SERVO_MIN_TICKS;
+        maxTicks = TREAT_SERVO_MAX_TICKS;
+    }
+    else
+    {
+        // Timer-arm servo keeps original range
+        minTicks = SERVO_MIN_TICKS;
+        maxTicks = SERVO_MAX_TICKS;
     }
 
     uint16_t pulseTicks =
-        SERVO_MIN_TICKS +
-        (uint16_t)(((uint32_t)position *
-        (SERVO_MAX_TICKS - SERVO_MIN_TICKS)) / 100u);
+        minTicks +
+        (uint16_t)(
+            ((uint32_t)position *
+            (maxTicks - minTicks)) / 100u
+        );
 
-    PWMOperate_SetPulseWidthOnChannel(pulseTicks, servo);
+    PWMOperate_SetPulseWidthOnChannel(
+        pulseTicks, servo
+    );
 }
+
 
 // Preserve original function
 void MoveTimerArmServo(uint8_t position)
