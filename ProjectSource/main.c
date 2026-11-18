@@ -188,7 +188,7 @@ int main(void)
     // Power the break-beam IR emitter (RB13) and set up its receiver (RB10)
     InitBreakBeam();
 
-    // Keep treat servo stationary
+    // Move treat servo to closed position
     MoveTreatServo(0u);
 
     // now initialize the Events and Services Framework and start it running
